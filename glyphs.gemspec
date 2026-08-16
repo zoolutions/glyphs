@@ -26,11 +26,11 @@ Gem::Specification.new do |s|
       "CHANGELOG.md", "LICENSE.txt", "README.md"
     ].select { |f| File.file?(f) }
   end
-  s.homepage = "https://github.com/mhenrixon/glyphs"
+  s.homepage = "https://github.com/zoolutions/glyphs"
   s.metadata = {
-    "source_code_uri" => "https://github.com/mhenrixon/glyphs",
-    "changelog_uri" => "https://github.com/mhenrixon/glyphs/blob/main/CHANGELOG.md",
-    "bug_tracker_uri" => "https://github.com/mhenrixon/glyphs/issues",
+    "source_code_uri" => "https://github.com/zoolutions/glyphs",
+    "changelog_uri" => "https://github.com/zoolutions/glyphs/blob/main/CHANGELOG.md",
+    "bug_tracker_uri" => "https://github.com/zoolutions/glyphs/issues",
     "default_lint_roller_plugin" => "Glyphs::RuboCop::Plugin",
     "rubygems_mfa_required" => "true"
   }
