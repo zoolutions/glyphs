@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# docs-kit synced: v1.0.8
+
 # docs-kit configuration — everything that makes this site look like "glyphs"
 # rather than any other docs site. The shared chrome (Shell/Sidebar/ThemeSwitcher/
 # Code/Page) comes from the gem; only this config differs per site. The `themes`
@@ -34,7 +36,7 @@ Rails.application.config.to_prepare do
 
     # Repo + rubygems links in the topbar, rendered with the shipped brand marks.
     c.topbar_links = [
-      { href: "https://github.com/mhenrixon/glyphs", label: "GitHub", icon: :github },
+      { href: "https://github.com/zoolutions/glyphs", label: "GitHub", icon: :github },
       { href: "https://rubygems.org/gems/glyphs", label: "RubyGems", icon: :rubygems }
     ]
 
