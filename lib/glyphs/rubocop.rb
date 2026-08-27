@@ -18,7 +18,7 @@ module Glyphs
         LintRoller::About.new(
           name: "glyphs",
           version: Glyphs::VERSION,
-          homepage: "https://github.com/mhenrixon/glyphs",
+          homepage: "https://github.com/zoolutions/glyphs",
           description: "Icon-name validation and legacy icon-helper autocorrection for Glyphs components."
         )
       end
