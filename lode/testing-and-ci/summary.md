@@ -59,7 +59,7 @@ On `push` to `main` and on every `pull_request`, four jobs:
 |---|---|---|
 | `Lint` | 4.0 | `bundle exec rubocop lib spec` |
 | `Gem Tests (Ruby 3.4)` / `(Ruby 4.0)` | matrix, `fail-fast: false` | `bundle exec rspec` |
-| `Docs Lint` | 4.0 | `bundle exec rubocop` from `docs/` |
+| `Docs Lint` | 4.0 | `bundle exec rubocop` from `docs/` — inspects 0 files today, since the root `.rubocop.yml` excludes `docs/**/*` for every run beneath it (issue #15) |
 | `Docs Tests` | 4.0 | `bundle exec rspec` from `docs/` |
 
 Green means all five check runs. The gem and the docs app are separate bundles

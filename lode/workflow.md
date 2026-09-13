@@ -14,7 +14,7 @@ about this repository that is not already in `../.claude/rules/` or the rest of
 | lint | `bundle exec rubocop lib spec` | what CI's `Lint` job runs; bare `rubocop` (what `rake` runs) also covers `Rakefile` and `glyphs.gemspec` |
 | everything | `bundle exec rake` | `spec` then bare `rubocop` — the strictest local gate |
 | one CI cell locally | n/a | the matrix is only Ruby 3.4 / 4.0; switch Ruby (`.tool-versions` pins 4.0.5) and re-run the same two commands |
-| docs check | `cd docs && bundle exec rubocop && bundle exec rspec` | separate bundle; must be run from `docs/` |
+| docs check | `cd docs && bundle exec rubocop && bundle exec rspec` | separate bundle; must be run from `docs/`. The rubocop half currently inspects 0 files: the root `.rubocop.yml`'s `AllCops: Exclude: docs/**/*` is ancestor-merged into the docs run (issue #15), so only the rspec half checks anything |
 | docs CSS | `cd docs && bun run build:css` | needed only when new Tailwind classes were added |
 | run the app | `cd docs && bin/dev` | a one-line `exec ./bin/rails server` — it does **not** read `Procfile.dev`, so run `bun run watch:css` in a second shell when editing Tailwind classes |
 | gem packaging | `bundle exec rake build` | `gem build --strict`, unpacks and prints the file list |
@@ -158,7 +158,7 @@ The fix for a symptom is almost never where the symptom surfaced:
 | File | Rule |
 |---|---|
 | `lib/glyphs/version.rb` | take the base's; a feature branch should never have bumped it |
-| `CHANGELOG.md` | union under `## [Unreleased]`, keeping both sides' bullets and not duplicating the `### Added`/`### Fixed` subheads |
+| `CHANGELOG.md` | union under `## [Unreleased]`, keeping both sides' bullets most recent first and not duplicating the `### Added`/`### Fixed` subheads |
 | `Gemfile.lock`, `docs/Gemfile.lock` | take the base's, then `bundle install` at the root or in `docs/` |
 | `docs/bun.lock` | take the base's, then `cd docs && bun install` |
 | `docs/app/models/doc.rb`, `docs/config/routes.rb` | append-only, base order first |
