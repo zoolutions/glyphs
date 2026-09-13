@@ -5,7 +5,7 @@ the whole team (and every autonomous session) shares the same conventions.
 
 ```
 .claude/
-├── commands/          Slash commands (/lfg, /tdd, /plan, /security, …) — one markdown file each
+├── commands/          Repo-specific slash commands (/architect, /security, /review-pr, /perf)
 ├── rules/             Standing rules (agents, coding-style, git-workflow, performance, testing)
 ├── README.md          This file — how to author a command
 └── SKILL_TEMPLATE.md  Copy-paste starting point for a new command
@@ -14,7 +14,7 @@ the whole team (and every autonomous session) shares the same conventions.
 ## Anatomy of a command
 
 A command is a markdown file under `commands/` with a YAML frontmatter block
-followed by the prompt body. `.claude/commands/tdd.md` is a good reference.
+followed by the prompt body. `.claude/commands/review-pr.md` is a good reference.
 
 ```markdown
 ---
@@ -47,17 +47,17 @@ latest model in that tier, so a command never goes stale on an outdated pin.
 | Tier | Use for | Commands here |
 |------|---------|---------------|
 | `haiku` | Mechanical / config work, diff pattern-scanning | *(none yet)* |
-| `sonnet` | Prescriptive, pattern-following passes with a tight prompt | `/github-review-comments`, `/github-review-failures` |
-| `opus` | Orchestration, security, review synthesis, and reasoning-heavy specialists | `/lfg`, `/architect`, `/security`, `/review-pr`, `/github-review-pr`, `/tdd`, `/perf` |
-| `fable` | Read-only planning that hands execution to cheaper models | `/plan` |
+| `sonnet` | Prescriptive, pattern-following passes with a tight prompt | *(none here — the plugin's `/lode:` commands pin their own)* |
+| `opus` | Orchestration, security, review synthesis, and reasoning-heavy specialists | `/architect`, `/security`, `/review-pr`, `/perf` |
+| `fable` | Read-only planning that hands execution to cheaper models | *(none here — see `/lode:plan`)* |
 
 Rules of thumb:
 
 - **Always use the alias**, never `claude-opus-4-8` or another full model ID —
   aliases track the latest model per tier and never rot.
-- **`fable` is pinned only on `/plan`.** For a plain interactive session, pick it
-  per-session with `/model` when you want the most capable model for architecture
-  or the hardest debugging.
+- **`fable` is for read-only planning** (`/lode:plan` pins it). For a plain
+  interactive session, pick it per-session with `/model` when you want the most
+  capable model for architecture or the hardest debugging.
 - **Subagents don't inherit the tier for free.** When a command (or you) spawns a
   subagent for mechanical work — file finding, naming-convention sweeps, pattern
   scans (e.g. sweeping the 13 `*_icon.rb` subclasses or the cop specs) — pass a
@@ -66,7 +66,7 @@ Rules of thumb:
 
 ## Authoring a new command
 
-1. Copy an existing command (`.claude/commands/tdd.md`) into `commands/{name}.md`
+1. Copy an existing command (`.claude/commands/review-pr.md`) into `commands/{name}.md`
    and strip it down to the frontmatter plus a fresh prompt body.
 2. Pick the tier by the table above.
 3. Write a `description` that leads with what it does and when to use it.
@@ -74,3 +74,11 @@ Rules of thumb:
    usually are — e.g. `Bash(bundle exec rspec:*)`, `Bash(bundle exec rubocop:*)`,
    `Bash(gh pr:*)`; open implementation commands usually are not).
 5. Update the tier table above so the new command appears in its tier's row.
+
+## Commands that live in the plugin, not here
+
+The implementation and PR workflow is the `lode@zoolutions` plugin's, enabled in
+`settings.json`: `/lode:lfg`, `/lode:tdd`, `/lode:plan`, `/lode:review-pr`,
+`/lode:finish-prs`, `/lode:debug-flaky`, plus `/lode:gate`, `/lode:learn` and
+`/lode:sync`. They read `lode/workflow.md` for everything repo-specific, so this
+directory keeps only the commands the plugin does not cover.

@@ -13,3 +13,6 @@ codedb.snapshot
 .claude/settings.local.json
 .claude/worktrees/
 .claude/scheduled_tasks.lock
+
+# Lode: scratch space for gate reports and handovers, never memory.
+/lode/tmp/
