@@ -1,0 +1,28 @@
+CLAUDE.md
+  s_00cebc6e884e54::t_c04dfab3526ed2 1-6
+.claude/commands/github-review-comments.md
+  s_00cebc6e884e54::t_e23990f18c2480 236
+  s_00cebc6e884e54::t_ea314c55d83e61 104
+  s_00cebc6e884e54::t_13fff8aae8d18b 247
+AGENTS.md
+  s_00cebc6e884e54::t_94a14ddf3fb44c 1-74
+.claude/commands/plan.md
+  s_00cebc6e884e54::t_c81eafb4d0317c 36
+  s_00cebc6e884e54::t_9a96ba50435ccf 48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "2890e8a5a0344edb31b416c5840926a1a6e0a729",
+  "prompts": {},
+  "sessions": {
+    "s_00cebc6e884e54": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a603fe4c-92ea-4e70-8126-5015d87e99f3",
+        "model": "unknown"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
