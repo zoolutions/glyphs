@@ -33,7 +33,7 @@ Protect this session's context: delegate mechanical exploration to cheaper subag
    - **Configuration**: `lib/glyphs/configuration.rb` (`raise_on_missing`, `fallback_icons`, `cache_svgs`, `keep_icons`, `prune_source_globs`).
    - **Pruning**: `lib/glyphs/source_scanner.rb` (Prism AST + template text scan, dynamic-call harvesting), `lib/glyphs/icon_pruner.rb`, `lib/glyphs/prune_runner.rb` (wiring + `verify!`), `lib/glyphs/prune_report.rb`, `lib/tasks/glyphs.rake` + `lib/glyphs/railtie.rb` (the `glyphs:prune_icons` task).
    - **RuboCop cops**: `lib/rubocop/cop/glyphs/*.rb` (IconResolution, LegacyIconHelper, PreferLibraryComponent + shared LibraryCallHelpers), plugin wiring in `lib/glyphs/rubocop.rb`.
-3. Read any `CLAUDE.md` and `.rubocop.yml` at the repo root — the invariants and lint gotchas live there. The published `docs/` site pages are the deeper reference for public API and usage.
+3. Read `AGENTS.md` and `.rubocop.yml` at the repo root — the invariants and lint gotchas live there. The published `docs/` site pages are the deeper reference for public API and usage.
 4. Check `git log` for recent related work; the design should extend it, not fight it.
 
 ## Phase 2 — Surface the unknowns (blindspot pass + interview)
@@ -45,7 +45,7 @@ Investigation tells you what the codebase says; this phase finds what the REQUES
    - edge cases the codebase makes possible that the request never mentions (missing SVGs, unknown variant, dynamic icon names the scanner can't resolve statically, a library with no subclass)
    - anything with no precedent in this repo — flag it explicitly as unknown-unknown territory
 2. **Interview the user** with AskUserQuestion, one question at a time, prioritized by blast radius: architecture-changing answers first, then public API / config surface, then developer ergonomics. Rules:
-   - Skip anything the codebase, CLAUDE.md, or an existing issue already answers.
+   - Skip anything the codebase, AGENTS.md, or an existing issue already answers.
    - 2–5 questions is the sweet spot; zero is fine when the request is genuinely unambiguous — say so rather than inventing questions.
    - Every question offers concrete options with a recommended default, never an open-ended essay prompt.
 3. **Record the answers** in the plan's Decision section as `Settled in interview:` bullets — constraints the executor must not re-litigate.
