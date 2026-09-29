@@ -27,7 +27,7 @@ You are the planning specialist. This command runs on the most capable model del
 
 Protect this session's context: delegate mechanical exploration to cheaper subagents and keep Fable for judgment.
 
-1. Fan out Explore agents (`subagent_type: Explore`) for file discovery and naming-convention sweeps across the gem (`lib/glyphs/`, `lib/rubocop/cop/glyphs/`) and the specs (`spec/glyphs/`, `spec/rubocop/cop/glyphs/`). Launch independent explorations in parallel. If the change touches SVG resolution, verify the real `Icons.config` surface from the transitive `icons` gem — don't assume the path layout (`app/assets/svg/icons/<library>/<variant>/<name>.svg`).
+1. Fan out Explore agents (`subagent_type: Explore`, `model: haiku`; `model: sonnet` when the agent must read and summarise a subsystem) for file discovery and naming-convention sweeps across the gem (`lib/glyphs/`, `lib/rubocop/cop/glyphs/`) and the specs (`spec/glyphs/`, `spec/rubocop/cop/glyphs/`). Launch independent explorations in parallel. If the change touches SVG resolution, verify the real `Icons.config` surface from the transitive `icons` gem — don't assume the path layout (`app/assets/svg/icons/<library>/<variant>/<name>.svg`).
 2. Read the load-bearing files yourself — the ones the design decision actually hinges on. Don't design from subagent summaries alone. The likely surfaces, by area:
    - **Icon components**: `lib/glyphs.rb` (the `Glyphs` Phlex::Kit, `svg_for` resolution, config), `lib/glyphs/icon.rb` (base `Icon < Phlex::HTML`), and the per-library subclass (`lucide_icon.rb`, `phosphor_icon.rb`, `hero_icon.rb`, …).
    - **Configuration**: `lib/glyphs/configuration.rb` (`raise_on_missing`, `fallback_icons`, `cache_svgs`, `keep_icons`, `prune_source_globs`).

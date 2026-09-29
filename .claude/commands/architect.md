@@ -43,7 +43,7 @@ Core/config  lib/glyphs.rb (Glyphs::Kit, svg_for resolution, config accessor),
 
 ## Delegate vs. do directly
 
-**Delegate** (Explore/Plan agents) when: multiple files change, you need to
+**Delegate** (Explore agents with `model: haiku`, or `model: sonnet` to read a subsystem; Plan agents with `model: sonnet`) when: multiple files change, you need to
 verify the real signature of a transitive `icons` gem call, or the work is
 cleanly scoped to one subsystem.
 
@@ -95,6 +95,8 @@ hold in your head.
 - [ ] Never bump the version in a feature PR — `rake release` owns it
 
 ## Handoff
+
+Run the `fable-validator` agent on the combined diff first. On BLOCK do not open or merge: mark it `needs-user` (or the command's equivalent) and report the blockers instead of calling it ready.
 
 Summarize: the subsystem-ordered plan, files per subsystem, integration points,
 the pruner-safety story, and the architectural decisions made.
