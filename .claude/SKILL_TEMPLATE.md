@@ -10,7 +10,8 @@ work, `sonnet` for prescriptive pattern-following passes, `opus` for
 orchestration, security, review synthesis, and reasoning-heavy specialists.
 Always use the tier alias, never a full model ID — aliases track the latest model
 in the tier. Pin `fable` only on read-only planning commands that hand execution
-to cheaper models (see `/plan`); otherwise choose it per-session with `/model`.
+to cheaper models (see `/plan`); sessions use it as the advisor, and the
+`fable-validator` agent checks a finished change.
 
 ```markdown
 ---

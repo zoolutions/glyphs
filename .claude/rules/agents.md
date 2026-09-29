@@ -4,9 +4,11 @@
 
 | Agent | Purpose | When to Use |
 |-------|---------|-------------|
-| Explore | Codebase exploration | Finding files, understanding patterns across the gem + docs app |
-| Plan | Implementation planning | Complex features spanning icon component → scanner → prune/rake |
-| general-purpose | Multi-step tasks | Research, complex searches |
+| Explore (`model: haiku`, or `sonnet` to read a subsystem) | Codebase exploration | Finding files, understanding patterns across the gem + docs app |
+| Plan (`model: sonnet`) | Implementation planning | Complex features spanning icon component → scanner → prune/rake |
+| general-purpose (`model: sonnet`) | Multi-step tasks | Research, complex searches |
+
+Every agent spawned names its `model:`. One that does not runs on `sonnet` (`CLAUDE_CODE_SUBAGENT_MODEL` in `.claude/settings.json`).
 
 ## Immediate Agent Usage
 
@@ -32,7 +34,7 @@ ALWAYS run independent operations in parallel:
 
 ## When to Use Explore
 
-Use the Explore agent (subagent_type=Explore) instead of direct Glob/Grep when:
+Use the Explore agent (subagent_type=Explore, `model: haiku`) instead of direct Glob/Grep when:
 - Open-ended exploration across the gem (`lib/glyphs/`, `lib/rubocop/cop/glyphs/`) and the docs app (`docs/`)
 - Confirming a Phlex/Icons API's real signature (e.g. how `svg_for` resolves a
   variant path, or how `Icons.config.base_path` is read) before building against it —

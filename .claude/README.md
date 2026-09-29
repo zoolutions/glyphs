@@ -55,14 +55,14 @@ Rules of thumb:
 
 - **Always use the alias**, never `claude-opus-4-8` or another full model ID —
   aliases track the latest model per tier and never rot.
-- **`fable` is pinned only on `/plan`.** For a plain interactive session, pick it
-  per-session with `/model` when you want the most capable model for architecture
-  or the hardest debugging.
+- **`fable` is pinned only on `/plan`.** Sessions run on `opus` with `fable` as the
+  advisor (`.claude/settings.json`), and the `fable-validator` agent checks a finished
+  change before its pull request opens (`/lfg`, Phase 6.5).
 - **Subagents don't inherit the tier for free.** When a command (or you) spawns a
   subagent for mechanical work — file finding, naming-convention sweeps, pattern
   scans (e.g. sweeping the 13 `*_icon.rb` subclasses or the cop specs) — pass a
-  cheaper `model:` explicitly. Left unset, a subagent inherits the session model,
-  so the most mechanical work runs at the highest price.
+  cheaper `model:` explicitly. Left unset, a subagent runs on `sonnet`
+  (`CLAUDE_CODE_SUBAGENT_MODEL` in `.claude/settings.json`), never on the session's model.
 
 ## Authoring a new command
 
