@@ -96,7 +96,7 @@ hold in your head.
 
 ## Handoff
 
-Run the `fable-validator` agent on the combined diff first. On BLOCK do not open or merge: mark it `needs-user` (or the command's equivalent) and report the blockers instead of calling it ready.
+If this session implemented a change (a plan-only run has an empty diff, and the validator BLOCKs an empty change): run the `fable-validator` agent on the combined diff first. On BLOCK do not open or merge: mark it `needs-user` (or the command's equivalent) and report the blockers instead of calling it ready.
 
 Summarize: the subsystem-ordered plan, files per subsystem, integration points,
 the pruner-safety story, and the architectural decisions made.
