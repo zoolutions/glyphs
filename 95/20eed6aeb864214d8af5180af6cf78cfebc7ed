@@ -1,0 +1,31 @@
+docs/Dockerfile
+  s_5664a33db25c83::t_7d2e016e038124 11
+docs/.gitignore
+  s_5664a33db25c83::t_7d2e016e038124 29-31
+docs/package.json
+  s_5664a33db25c83::t_7d2e016e038124 8-10
+docs/Gemfile
+  s_5664a33db25c83::t_1c53033922edc6 4
+docs/AGENTS.md
+  s_5664a33db25c83::t_7d2e016e038124 69-71
+docs/config/initializers/docs_kit.rb
+  s_5664a33db25c83::t_7d2e016e038124 3
+docs/app/assets/builds/application.css
+  s_5664a33db25c83::t_48977657147cc3 1-2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9520eed6aeb864214d8af5180af6cf78cfebc7ed",
+  "prompts": {},
+  "sessions": {
+    "s_5664a33db25c83": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "73e1e5ac-5937-497f-8b2e-8eb72e25219f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    }
+  }
+}
