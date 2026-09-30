@@ -28,7 +28,7 @@ keep_icons / prune_source_globs ignored   -> Read them from Configuration, don't
 Cop matches by string, not AST node       -> Use LibraryCallHelpers over the Prism/RuboCop node
 Cop spec lacks correction assertion       -> expect_offense + expect_correction
 Version bumped inside a feature PR         -> rake release owns version; never bump in a PR
-Manual gem push                           -> rake release[X.Y.Z]
+Manual gem push                           -> bin/release
 Feature branch off a non-main base        -> Branch off main (feat/, fix/, refactor/, ci/, chore/)
 New/changed behavior without a spec        -> RSpec first (RED -> GREEN), 80%+ coverage
 ```
