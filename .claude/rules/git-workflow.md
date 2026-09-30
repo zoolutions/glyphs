@@ -45,10 +45,13 @@ All work goes through PRs.
 
 ## Release
 
-Releases go through `rake release[X.Y.Z]` (or `rake release[X.Y.Z,force]` to
-re-create a botched release). It bumps `lib/glyphs/version.rb`, refreshes the
-lockfiles, verifies `gem build --strict`, commits, pushes `main`, and creates
-the GitHub Release. The Release workflow then publishes to RubyGems via trusted
+Releases go through `bin/release` (or `bin/release X.Y.Z --force` to re-create
+a botched release), the front door to `rake release[X.Y.Z]` in
+`rakelib/release.rake`. It bumps `lib/glyphs/version.rb` and the glyphs pin in
+the tracked lockfiles (in place, no re-resolve), verifies `gem build --strict`,
+commits, pushes `main`, and creates the GitHub Release. `bin/release`,
+`rakelib/release.rake` and the shared jobs of `release.yml` are the zoolutions
+release kit (canonical copy in docs-kit): never edit them here. The Release workflow then publishes to RubyGems via trusted
 publishing (OIDC + Sigstore attestation). Never `gem push` by hand, and never
 bump the version inside a feature PR — `rake release` owns the version.
 
@@ -65,7 +68,7 @@ bundle exec rspec                             # Full suite
 
 - **NEVER** commit directly to `main`
 - **NEVER** force push to shared branches
-- **NEVER** `gem push` manually — use `rake release[X.Y.Z]`
+- **NEVER** `gem push` manually — use `bin/release`
 - **NEVER** bump the version in a feature PR — that's `rake release`'s job
 - **ALWAYS** run validators before committing
 - **ALWAYS** write meaningful commit messages

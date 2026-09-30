@@ -40,10 +40,14 @@ by the global hook and comes back clean — add a filter only if that stops bein
 
 ## Releases
 
-`rake release[X.Y.Z]` (`[pre]` for a pre-release, `[X.Y.Z,force]` to re-cut) bumps
-`lib/glyphs/version.rb`, commits, pushes `main`, and cuts a GitHub release; on publish,
-`.github/workflows/release.yml` tests, builds, verifies gem contents, signs with Sigstore, and
-publishes to RubyGems. `rake build` builds the gem locally and lists its files for a manual check.
+`bin/release` (`list`, `--dry-run`, `minor`/`major`/`X.Y.Z`, `--force` to re-cut) is the front
+door to `rake release[X.Y.Z]` (`rakelib/release.rake`), which bumps `lib/glyphs/version.rb` and
+the glyphs pin in the tracked lockfiles, commits, pushes `main`, and cuts a GitHub release; on
+publish, `.github/workflows/release.yml` tests, builds, verifies gem contents, signs with Sigstore,
+and publishes to RubyGems. Both files and the shared jobs of `release.yml` are the zoolutions
+release kit (canonical copy in docs-kit, `RELEASE_KIT.md`): never edit them here. To re-publish a
+release whose workflow failed, fix `main` and run `bin/release X.Y.Z --force` (the publish skips a
+version that is already on RubyGems). `rake build` builds the gem locally and lists its files for a manual check.
 Changelog entries go under `## [Unreleased]` in `CHANGELOG.md`, grouped by `### Added` /
 `### Fixed` / etc.
 
