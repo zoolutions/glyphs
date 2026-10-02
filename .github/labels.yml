@@ -132,7 +132,6 @@ paths:
   "lib/glyphs/rubocop.rb": rubocop
   "config/default.yml": rubocop
   "spec/glyphs/{icon,icon_reference,configuration,railtie}_spec.rb": icons
-  "spec/glyphs/{icon,icon_reference,configuration,railtie}_*_spec.rb": icons
   "spec/glyphs/{source_scanner,prune_runner,prune_report,icon_pruner}_spec.rb": pruning
   "spec/rubocop/**/*": rubocop
   ".github/**/*": devops
