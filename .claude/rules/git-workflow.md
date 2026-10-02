@@ -40,8 +40,9 @@ All work goes through PRs.
 2. Make focused, atomic commits
 3. Run validators before pushing (`bundle exec rake`)
 4. Create PR with summary + test plan
-5. Request review
-6. Squash merge when approved + CI green
+5. Label the PR: exactly one `type` + at least one `area` (`gh pr create --label …`), never a `status` label. `bin/labels infer <changed paths>` gives the areas; the taxonomy is `.github/labels.yml`, the rules are `.github/LABELS.md`
+6. Request review
+7. Squash merge when approved + CI green
 
 ## Release
 
@@ -72,4 +73,5 @@ bundle exec rspec                             # Full suite
 - **NEVER** bump the version in a feature PR — that's `rake release`'s job
 - **ALWAYS** run validators before committing
 - **ALWAYS** write meaningful commit messages
+- Labels are edited in `.github/labels.yml` and applied with `bin/labels sync`, never by hand in the GitHub UI. `bin/labels` and `.github/LABELS.md` are the zoolutions labels kit (canonical copy in docs-kit, see its LABELS_KIT.md): never edit them here — change docs-kit, then `script/labels-kit sync`
 - Keep commits small and focused — one logical change per commit

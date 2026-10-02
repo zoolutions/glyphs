@@ -51,6 +51,16 @@ version that is already on RubyGems). `rake build` builds the gem locally and li
 Changelog entries go under `## [Unreleased]` in `CHANGELOG.md`, grouped by `### Added` /
 `### Fixed` / etc.
 
+## Labels
+
+Every pull request carries exactly one `type` label and at least one `area`
+label from `.github/labels.yml` — never a `status` label. `/plan` labels the
+issue, `/lfg` copies the issue's labels onto the PR (or infers them:
+`bin/labels infer $(git diff --name-only origin/main...HEAD)`). Labels change in
+the manifest and reach GitHub with `bin/labels sync`, never through the UI.
+Rules: `.github/LABELS.md`. `bin/labels` + `.github/LABELS.md` are the shared
+labels kit (canonical copy in docs-kit): never edit them in place.
+
 ## Screenshots on PRs and issues (rendering changes)
 
 `gh` ≥ 2.99 uploads images and videos itself. A change to icon rendering (`lib/glyphs/*_icon.rb`,
@@ -60,7 +70,7 @@ local path, a base64 blob, or "screenshot available on request". Cop and pruning
 diffs — no screenshot needed.
 
 ```bash
-gh pr create --attach './after.png#LucideIcon fallback rendering' --title … --body …   # picture in hand already
+gh pr create --attach './after.png#LucideIcon fallback rendering' --title … --label <type> --label <area> --body …   # picture in hand already
 gh pr comment <n> --attach './after.png#LucideIcon fallback rendering' --body 'Before/after for the fallback.'
 gh pr comment <n> --attach ./before.png --attach ./after.png   # repeat the flag, up to 50 files
 gh issue comment <n> --attach ./repro.mp4                       # video renders as a player
