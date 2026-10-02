@@ -29,7 +29,7 @@ labels:
     description: Refactoring or cleanup that pays down an accepted shortcut
     group: type
   - name: security
-    color: e9e257
+    color: "e9e257"
     description: Vulnerability, hardening, or an authorization correctness fix
     group: type
   - name: documentation
@@ -80,7 +80,7 @@ labels:
     description: Has a /plan body with Context, Decision, Steps and Gates; ready for /lfg
     group: status
   - name: epic
-    color: 5319e7
+    color: "5319e7"
     description: Umbrella item tracking several smaller issues
     group: status
   - name: blocker
@@ -111,7 +111,7 @@ labels:
     description: This issue or pull request already exists
     group: community
   - name: invalid
-    color: e4e669
+    color: "e4e669"
     description: This doesn't seem right
     group: community
   - name: wontfix
@@ -131,12 +131,14 @@ paths:
   "lib/rubocop/**/*": rubocop
   "lib/glyphs/rubocop.rb": rubocop
   "config/default.yml": rubocop
+  "spec/glyphs/{icon,icon_reference,configuration,railtie}_spec.rb": icons
+  "spec/glyphs/{source_scanner,prune_runner,prune_report,icon_pruner}_spec.rb": pruning
+  "spec/rubocop/**/*": rubocop
   ".github/**/*": devops
   "bin/release": devops
   "rakelib/**/*": devops
-  "Dockerfile*": devops
+  "**/Dockerfile*": devops
   ".claude/**/*": dx
   "{AGENTS,CLAUDE}.md": dx
   "bin/labels": dx
-  "lode/**/*": dx
   "docs/**/*": docs-site
