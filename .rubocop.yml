@@ -17,6 +17,8 @@ Layout/LineLength:
 
 Layout/ArgumentAlignment:
   EnforcedStyle: with_fixed_indentation
+  Exclude:
+    - bin/labels # bin/labels is the zoolutions labels kit, byte-identical across repos; see docs-kit LABELS_KIT.md
 
 Layout/ArrayAlignment:
   EnforcedStyle: with_fixed_indentation
@@ -26,6 +28,10 @@ Layout/CaseIndentation:
 
 Layout/EndAlignment:
   EnforcedStyleAlignWith: start_of_line
+
+Layout/MultilineMethodCallIndentation:
+  Exclude:
+    - bin/labels # bin/labels is the zoolutions labels kit, byte-identical across repos; see docs-kit LABELS_KIT.md
 
 Layout/MultilineMethodCallBraceLayout:
   EnforcedStyle: symmetrical
