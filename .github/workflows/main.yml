@@ -9,10 +9,10 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     name: Lint
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -22,7 +22,7 @@ jobs:
         run: bundle exec rubocop lib spec
 
   gem-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     name: Gem Tests (Ruby ${{ matrix.ruby }})
     strategy:
       fail-fast: false
@@ -32,7 +32,7 @@ jobs:
           - "4.0"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -42,14 +42,14 @@ jobs:
         run: bundle exec rspec
 
   docs-lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     name: Docs Lint
     defaults:
       run:
         working-directory: docs
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -60,14 +60,14 @@ jobs:
         run: bundle exec rubocop
 
   docs-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     name: Docs Tests
     defaults:
       run:
         working-directory: docs
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
