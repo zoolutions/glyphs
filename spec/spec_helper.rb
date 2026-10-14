@@ -3,6 +3,7 @@
 require "bundler/setup"
 
 require "glyphs"
+require "conformance_kit/rspec"
 require "rubocop"
 require "rubocop/rspec/support"
 require "glyphs/rubocop"
