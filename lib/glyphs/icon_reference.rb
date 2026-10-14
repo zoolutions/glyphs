@@ -11,7 +11,7 @@ module Glyphs
   # The library/variant tables are sourced from the `icons` gem wherever
   # possible (`default_variant_for`) so they never drift from what actually
   # resolves at render time.
-  class IconReference < Data.define(:library, :variant, :name) # rubocop:disable Style/DataInheritance
+  class IconReference < Data.define(:library, :variant, :name)
     # Subclassed (not the block form) so the constants below are namespaced under
     # IconReference — constants defined inside a `Data.define do…end` block leak
     # to the enclosing scope instead of nesting under the class.
