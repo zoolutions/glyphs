@@ -55,7 +55,7 @@ group :development, :test do
   # (add_excludes_from_files walks up), which integrates that config's plugins —
   # so the gems the gem-level config plugs in must be resolvable here too
   # (conformance-kit for its inherit_gem, rubocop-thread_safety for the plugin).
-  gem "conformance-kit", "~> 0.3", require: false
+  gem "conformance-kit", "~> 0.4", require: false
   gem "rubocop-rake", require: false
   gem "rubocop-rspec", require: false
   gem "rubocop-thread_safety", ">= 0.8", require: false
