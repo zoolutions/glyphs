@@ -52,9 +52,10 @@ module Glyphs
       @lock.synchronize { @configuration = Configuration.new }
     end
 
-    # Call once at the end of boot, after every configure: deep-freezes the
-    # configuration so svg_for can run inside a non-main Ractor. Configure
-    # before it; reset_configuration! (tests) starts over with a fresh one.
+    # Freezes the configuration so svg_for can run inside a non-main Ractor
+    # (see Configuration#finalize!; never raises). Glyphs::Railtie calls it once
+    # a Rails app has booted; outside Rails, call it at the end of boot, after
+    # every configure. reset_configuration! (tests) starts over with a fresh one.
     def finalize!
       @lock.synchronize { @configuration.finalize! }
       self
