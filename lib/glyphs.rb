@@ -99,6 +99,14 @@ module Glyphs
       template.render(attributes) || render_svg(name:, library:, variant:, attributes:)
     end
 
+    # Seeds this Ractor's cache with markup rendered elsewhere, e.g. on the
+    # main Ractor (which can run the icons gem and Nokogiri) for a Ractor that
+    # cannot. Calls with a data: attribute still render through the icons gem.
+    def preload_svg(name:, library:, svg:, variant: nil)
+      key = [library.to_sym, variant&.to_sym, name.to_s.tr("_", "-"), false]
+      svg_cache.store(key, SvgTemplate.new(svg), configuration.svg_cache_size)
+    end
+
     # The current Ractor's SvgCache.
     def svg_cache
       Store.fetch(:glyphs_svg_cache) { SvgCache.new }

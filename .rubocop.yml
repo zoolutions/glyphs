@@ -86,6 +86,7 @@ RSpec/DescribeClass:
   Exclude:
     - spec/glyphs/kit_spec.rb
     - spec/glyphs/register_library_spec.rb
+    - spec/glyphs/ractor_canary_spec.rb
 
 RSpec/DescribeMethod:
   Exclude:
