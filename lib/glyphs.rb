@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "monitor"
 require "phlex"
 require "icons"
 require "zeitwerk"
@@ -32,18 +33,31 @@ Icons.config
 module Glyphs
   extend Phlex::Kit
 
+  # Guards the boot-time writers (configure, register_library, finalize!). A
+  # Monitor, so a configure block may call register_library. Main Ractor only:
+  # readers never take it, so svg_for runs in any Ractor once finalized.
+  @lock = Monitor.new
+  @configuration = Configuration.new
+
   class << self
+    # The current configuration: a plain read, shareable after finalize!.
+    attr_reader :configuration
+
     def configure
-      yield(configuration) if block_given?
+      @lock.synchronize { yield(@configuration) if block_given? }
       configuration
     end
 
-    def configuration
-      @configuration ||= Configuration.new
+    def reset_configuration!
+      @lock.synchronize { @configuration = Configuration.new }
     end
 
-    def reset_configuration!
-      @configuration = Configuration.new
+    # Call once at the end of boot, after every configure: deep-freezes the
+    # configuration so svg_for can run inside a non-main Ractor. Configure
+    # before it; reset_configuration! (tests) starts over with a fresh one.
+    def finalize!
+      @lock.synchronize { @configuration.finalize! }
+      self
     end
 
     # Defines a `Glyphs::Icon` subclass for a custom icon library and exposes it
@@ -56,16 +70,18 @@ module Glyphs
       library = library.to_sym
       name = component.to_sym
 
-      if const_defined?(name, false)
-        existing = const_get(name, false)
-        return existing if existing < Icon && library == existing::LIBRARY
+      @lock.synchronize do
+        if const_defined?(name, false)
+          existing = const_get(name, false)
+          return existing if existing < Icon && library == existing::LIBRARY
 
-        raise ArgumentError, "Glyphs::#{name} is already defined and does not render the #{library} library"
+          raise ArgumentError, "Glyphs::#{name} is already defined and does not render the #{library} library"
+        end
+
+        klass = Class.new(Icon)
+        klass.const_set(:LIBRARY, library)
+        const_set(name, klass)
       end
-
-      klass = Class.new(Icon)
-      klass.const_set(:LIBRARY, library)
-      const_set(name, klass)
     end
 
     # Returns the SVG markup for an icon, applying the configured missing-icon

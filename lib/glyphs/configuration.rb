@@ -45,5 +45,25 @@ module Glyphs
 
       @svg_cache_size = size
     end
+
+    # Deep-freezes the configuration so it is Ractor-shareable (see
+    # Glyphs.finalize!). Raises ArgumentError naming the setting whose value
+    # cannot be shared, e.g. an on_missing_icon lambda that closes over self.
+    def finalize!
+      return freeze unless defined?(::Ractor)
+
+      instance_variables.each { |ivar| make_shareable(ivar) }
+      ::Ractor.make_shareable(self)
+    end
+
+    private
+
+    def make_shareable(ivar)
+      ::Ractor.make_shareable(instance_variable_get(ivar))
+    rescue ::Ractor::Error => e # IsolationError included
+      raise ArgumentError, "Glyphs.finalize!: #{ivar.to_s.delete_prefix('@')} is not Ractor-shareable " \
+                           "(#{e.message}). Give it a shareable value, e.g. a frozen object that responds " \
+                           "to #call, or Ractor.shareable_proc on Ruby 4.0+."
+    end
   end
 end
