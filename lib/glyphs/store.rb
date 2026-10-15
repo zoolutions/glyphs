@@ -26,7 +26,7 @@ module Glyphs
     unless native?
       @fallback_lock = Mutex.new
       # Only on engines without Ractor: guarded by @fallback_lock, never read unlocked.
-      @fallback_values = {}
+      @fallback_values = {} # rubocop:disable ThreadSafety/MutableClassInstanceVariable
     end
   end
 end
