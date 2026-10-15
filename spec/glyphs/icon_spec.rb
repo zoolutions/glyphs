@@ -123,13 +123,15 @@ RSpec.describe Glyphs::Icon do
       expect(File).to have_received(:read).twice
     end
 
-    it "caches per attribute set" do
+    it "reads the svg file once across attribute sets" do
       allow(File).to receive(:read).and_call_original
 
-      Glyphs::LucideIcon.new(:house, class: "size-4").call
-      Glyphs::LucideIcon.new(:house, class: "size-6").call
+      small = Glyphs::LucideIcon.new(:house, class: "size-4").call
+      large = Glyphs::LucideIcon.new(:house, class: "size-6").call
 
-      expect(File).to have_received(:read).twice
+      expect(File).to have_received(:read).once
+      expect([small, large]).to all(include('data-glyph="lucide-house"'))
+      expect(large).to include('class="size-6"')
     end
   end
 end

@@ -100,3 +100,6 @@ RSpec/SpecFilePathFormat:
     - spec/glyphs/kit_spec.rb
     - spec/glyphs/register_library_spec.rb
     - spec/rubocop/plugin_spec.rb
+    # Glyphs-level behaviours, one file each (#25)
+    - spec/glyphs/contention_spec.rb
+    - spec/glyphs/svg_cache_bound_spec.rb

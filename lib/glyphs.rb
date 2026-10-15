@@ -32,9 +32,6 @@ Icons.config
 module Glyphs
   extend Phlex::Kit
 
-  @svg_cache = {}
-  @svg_cache_mutex = Mutex.new
-
   class << self
     def configure
       yield(configuration) if block_given?
@@ -72,18 +69,28 @@ module Glyphs
     end
 
     # Returns the SVG markup for an icon, applying the configured missing-icon
-    # policy (raise / instrument / fallback) and an optional per-process cache.
+    # policy (raise / instrument / fallback) and the per-Ractor cache: one
+    # entry per [library, variant, name], the caller's attributes applied to
+    # the cached markup on every call.
     def svg_for(name:, library:, variant:, attributes:)
       return render_svg(name:, library:, variant:, attributes:) unless configuration.cache_svgs
 
-      key = [library, variant, name, attributes]
-      @svg_cache_mutex.synchronize do
-        @svg_cache[key] ||= render_svg(name:, library:, variant:, attributes:)
+      data = attributes.key?(:data)
+      template = svg_cache.compute_if_absent([library, variant, name, data], configuration.svg_cache_size) do
+        markup = render_svg(name:, library:, variant:, attributes: data ? SvgTemplate::DATA_SLOT : {})
+        SvgTemplate.new(markup, data_slot: data)
       end
+      template.render(attributes) || render_svg(name:, library:, variant:, attributes:)
     end
 
+    # The current Ractor's SvgCache.
+    def svg_cache
+      Store.fetch(:glyphs_svg_cache) { SvgCache.new }
+    end
+
+    # Empties the current Ractor's cache (other Ractors keep theirs).
     def reset_cache!
-      @svg_cache_mutex.synchronize { @svg_cache = {} }
+      svg_cache.clear
     end
 
     private
