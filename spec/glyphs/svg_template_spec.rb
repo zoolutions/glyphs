@@ -93,6 +93,13 @@ RSpec.describe Glyphs::SvgTemplate do
     end
   end
 
+  it "keeps a caller's data: key named like the slot marker, as the icons gem does" do
+    attributes = { data: { x: "1", glyphs_data_slot: "kept", y: "2" } }
+    expected = uncached(**attributes)
+
+    expect([svg_for(**attributes), svg_for(**attributes)]).to all(eq(expected))
+  end
+
   it "returns the cached bytes, frozen, when there are no attributes" do
     first = svg_for
 

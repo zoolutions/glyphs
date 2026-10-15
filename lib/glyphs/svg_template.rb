@@ -85,10 +85,11 @@ module Glyphs
     end
 
     # Puts the data: attributes where the slot marker is, in order, replacing
-    # any already on the tag, then drops the marker.
+    # any already on the tag, then drops the marker. A caller's own attribute
+    # named like the marker would be dropped with it: that call renders uncached.
     def splice_data(pairs, data)
       merged = collect(data)
-      return false unless merged
+      return false if merged.nil? || merged.any? { |name, _| name == SLOT_ATTRIBUTE }
 
       slot = @slot
       merged.each do |name, fragment|
