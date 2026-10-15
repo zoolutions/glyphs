@@ -49,10 +49,10 @@ module Glyphs
     # Freezes the configuration and makes every setting Ractor-shareable that
     # can be, so svg_for can read it from a non-main Ractor. Glyphs.finalize!
     # calls it (in a Rails app, Glyphs::Railtie does after boot). Never raises
-    # and never freezes an object the app still holds: a collection becomes a
-    # frozen copy, and a value that cannot be shared (an on_missing_icon lambda
-    # closing over self, a callable holding a logger) is kept as is, which
-    # leaves the configuration readable on the main Ractor only.
+    # and never freezes an object the app still holds: a collection or a Proc
+    # becomes a shareable copy, and a value that cannot be shared (an
+    # on_missing_icon lambda closing over self, a callable holding a logger) is
+    # kept as is, which leaves the configuration readable on the main Ractor only.
     def finalize!
       return self if frozen?
 
@@ -68,7 +68,7 @@ module Glyphs
       return value if ::Ractor.shareable?(value)
 
       case value
-      when ::Proc then ::Ractor.make_shareable(value) # a Proc cannot be copied; a failed attempt freezes nothing
+      when ::Proc then ::Ractor.make_shareable(value.dup) # Ractor's copy: cannot copy a Proc; #dup can
       when ::Hash, ::Array, ::String then ::Ractor.make_shareable(value, copy: true)
       else value # an app's object: freezing it in place would freeze what it refers to (its logger) too
       end

@@ -70,14 +70,17 @@ RSpec.describe Glyphs, ".finalize!" do
     expect(names).not_to be_frozen
   end
 
-  it "makes a capture-free on_missing_icon lambda shareable" do
+  it "shares a copy of a capture-free on_missing_icon lambda, leaving the app's own unfrozen" do
     skip "no Ractor on #{RUBY_ENGINE}" unless defined?(Ractor)
-    hook = Module.new.instance_exec { ->(error, **) { warn error.message } } # self is a module: shareable
+    hook = Module.new.instance_exec { ->(error, **) { error.message } } # self is a module: shareable
     described_class.configure { |config| config.on_missing_icon = hook }
 
     described_class.finalize!
 
+    shared = described_class.configuration.on_missing_icon
     expect(Ractor.shareable?(described_class.configuration)).to be(true)
+    expect(hook).not_to be_frozen
+    expect([shared.lambda?, shared.call(StandardError.new("gone"))]).to eq([true, "gone"])
   end
 
   it "accepts a shareable on_missing_icon" do
