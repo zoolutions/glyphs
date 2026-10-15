@@ -12,5 +12,7 @@ main_only:
     reason: >-
       guards the boot-time writers (configure, register_library, finalize!, reset_configuration!), which only
       the main Ractor calls; the readers (configuration, svg_for) never take it
-  - name: Glyphs::Railtie.@rake_tasks
+  # Only the ivars Rails::Railtie's class methods write, so state glyphs adds to its Railtie is still audited.
+  - ancestor: Rails::Railtie
+    ivars: ["@rake_tasks", "@load_console", "@runner", "@generators", "@server", "@instance", "@railtie_name", "@load_index"]
     reason: Rails::Railtie's own class state, set by Rails at boot on the main Ractor
