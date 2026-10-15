@@ -1,0 +1,12 @@
+name: Conformance
+
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    uses: zoolutions/conformance-kit/.github/workflows/conformance.yml@v0.3.0
