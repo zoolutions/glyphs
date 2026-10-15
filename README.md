@@ -96,10 +96,13 @@ Glyphs.configure do |config|
     heroicons: "question-mark-circle"
   }
 
-  # Memoize rendered SVGs per [library, variant, name]; the call's attributes
-  # (class:, data:, ...) are applied to the cached markup each time. Default: true.
+  # Memoize rendered SVGs per [library, variant, name] and whether data: is given;
+  # the call's attributes (class:, data:, ...) are applied to the cached markup
+  # each time. Attributes the icons gem writes specially (HTML boolean attributes,
+  # href/src/action, control characters) render uncached. Default: true.
   # Note: fallback renders are cached under the original name, so on_missing_icon
-  # fires once per missing icon while it stays cached, rather than on every render.
+  # fires once per cache entry (with and without data:) while it stays cached, and
+  # on every render that goes uncached.
   config.cache_svgs = true
 
   # How many icons the cache holds (least recently used evicted first). One
@@ -119,17 +122,19 @@ From then on the configuration is read-only, and writing to it raises `FrozenErr
 initializer, not in a `config.after_initialize` block of your own (that runs after glyphs' hook). In tests,
 `Glyphs.reset_configuration!` starts over with a fresh, writable configuration.
 
-Finalizing never raises and never freezes an object of yours: a collection setting becomes a frozen copy, and
-a value that cannot be shared is kept as is. `on_missing_icon` is the usual one: a lambda that closes over the
+Finalizing never raises and never freezes an object of yours: a collection setting or a Proc becomes a
+shareable copy, and a value that cannot be shared is kept as is. `on_missing_icon` is the usual one: a lambda that closes over the
 initializer's `self` (like the one above) or a callable holding a logger. The configuration then stays
 readable on the main Ractor only, which is all an app without Ractors needs; another Ractor reading it raises
-`Ractor::IsolationError`. To use glyphs from other Ractors, give `on_missing_icon` a shareable value: a frozen
-object with a `#call` method (and nothing unshareable inside) or `Ractor.shareable_proc` (Ruby 4.0+).
+`Ractor::IsolationError`. To use glyphs from other Ractors, give `on_missing_icon` a Ractor-shareable value: an
+object with a `#call` method that `Ractor.shareable?` accepts (frozen, with nothing unshareable inside) or
+`Ractor.shareable_proc` (Ruby 4.0+).
 
 The icons gem cannot render inside a non-main Ractor today (its configuration is unshareable module
 state, and Nokogiri is Ractor-unsafe), so each Ractor's cache starts empty and a miss there raises.
-Render on the main Ractor and hand the markup over with `Glyphs.preload_svg`; cache hits, attributes
-included, then work in that Ractor:
+Render on the main Ractor and hand the markup over with `Glyphs.preload_svg`; cache hits then work in that
+Ractor for calls without `data:` whose attributes the cache can apply (a `data:` call, or one with an attribute
+that renders uncached, still needs the icons gem):
 
 ```ruby
 svg = Glyphs.svg_for(name: "house", library: :lucide, variant: nil, attributes: {}) # main Ractor

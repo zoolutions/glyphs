@@ -6,8 +6,8 @@
 
 - **The configuration is frozen once a Rails app has booted.** `Glyphs::Railtie`
   calls `Glyphs.finalize!` from `after_initialize`, after every
-  `config/initializers` file, with no code of the app's. Writing to it after
-  that raises `FrozenError`: `Glyphs.configure` in an app's own
+  `config/initializers` file; no application code is needed. Writing to it
+  after that raises `FrozenError`: `Glyphs.configure` in an app's own
   `config.after_initialize` block (it runs after glyphs' hook) or
   `Glyphs.configuration.<setting> =` at runtime. Configure glyphs in an
   initializer; in tests, `Glyphs.reset_configuration!` starts over with a
@@ -58,15 +58,16 @@
   Ractor-shareable that can be, so `svg_for` can read it from a non-main
   Ractor. Called for you in a Rails app (above); outside Rails, call it at the
   end of boot. It never raises and never freezes an object of the app's: a
-  collection setting becomes a frozen copy, and a value that cannot be shared,
-  such as the README's `on_missing_icon` lambda (it closes over the
-  initializer's `self`) or a callable holding a logger, is kept as is. The
-  configuration is then readable on the main Ractor only; reading it from
-  another Ractor raises `Ractor::IsolationError` until `on_missing_icon` is a
-  frozen callable or a `Ractor.shareable_proc` (Ruby 4.0+). The SVG cache is
-  per Ractor; `Glyphs.preload_svg` seeds a Ractor's cache with markup rendered
-  on the main Ractor, since the icons gem cannot render inside another one.
-  Refs #25
+  collection setting or a Proc becomes a shareable copy, and a value that
+  cannot be shared, such as the README's `on_missing_icon` lambda (it closes
+  over the initializer's `self`) or a callable holding a logger, is kept as
+  is. The configuration is then readable on the main Ractor only; reading it
+  from another Ractor raises `Ractor::IsolationError` until `on_missing_icon`
+  is a Ractor-shareable callable (frozen, with nothing unshareable inside) or a
+  `Ractor.shareable_proc` (Ruby 4.0+). The SVG cache is per Ractor;
+  `Glyphs.preload_svg` seeds a Ractor's cache with markup rendered on the main
+  Ractor, since the icons gem cannot render inside another one. It serves calls
+  without `data:` whose attributes the cache can apply. Refs #25
 
 - **`config.svg_cache_size`** (default 1024; anything but a positive Integer
   raises `ArgumentError`), and `Glyphs.svg_cache`, the current Ractor's cache.

@@ -60,8 +60,9 @@ class Views::Docs::Pages::MissingIcons < DocsUI::Page
         read from any Ractor. A lambda like this one closes over the
         initializer's `self`, so it cannot be shared: it is kept as is and keeps
         working, and the configuration stays readable on the main Ractor only.
-        A frozen object with a `#call` method, or `Ractor.shareable_proc`
-        (Ruby 4.0+), can be read from every Ractor.
+        A Ractor-shareable object with a `#call` method (frozen, with nothing
+        unshareable inside), or `Ractor.shareable_proc` (Ruby 4.0+), can be
+        read from every Ractor.
       MD
     end
   end
@@ -70,10 +71,13 @@ class Views::Docs::Pages::MissingIcons < DocsUI::Page
     DocsUI::Section("Interaction with the SVG cache") do
       md <<~'MD'
         Fallback renders are cached under the *original* icon name, so
-        `on_missing_icon` fires **once per missing icon while it is cached**, not on
-        every render — your logs stay readable while the fallback keeps
-        rendering. Set `config.cache_svgs = false` to trade that for a
-        notification per render.
+        `on_missing_icon` fires **once per cache entry while it is cached** (one
+        for calls without `data:`, one for calls with it), not on every render —
+        your logs stay readable while the fallback keeps rendering. A call with
+        an attribute the icons gem writes specially (HTML boolean attributes,
+        `href`/`src`/`action`, control characters) renders uncached and
+        notifies on every render. Set `config.cache_svgs = false` to trade that
+        for a notification per render.
       MD
     end
   end
