@@ -44,13 +44,16 @@ module Glyphs
       "_tabler" => :tabler
     }.freeze
 
+    # Component name (`"LucideIcon"`) => library symbol (`:lucide`). Built at
+    # load, frozen, so it is shareable and never lazily (re)computed.
+    COMPONENT_TO_LIBRARY = LIBRARY_TO_COMPONENT.to_h { |library, component| [component, library] }.freeze
+
     # Raw `iconify lucide--house` class strings.
     ICONIFY_PATTERN = /\biconify\s+(lucide|phosphor|heroicons)--([a-z0-9-]+)/
 
     class << self
-      # Component name (`"LucideIcon"`) => library symbol (`:lucide`).
       def component_to_library
-        @component_to_library ||= LIBRARY_TO_COMPONENT.to_h { |library, component| [component, library] }.freeze
+        COMPONENT_TO_LIBRARY
       end
 
       def legacy_helpers
@@ -61,7 +64,7 @@ module Glyphs
       # symbol, or nil when the method isn't an icon call.
       def library_for(method_name)
         name = method_name.to_s
-        component_to_library[name] || LEGACY_HELPERS[name]
+        COMPONENT_TO_LIBRARY[name] || LEGACY_HELPERS[name]
       end
 
       # The library's default variant, as configured in the icons gem. Returns a

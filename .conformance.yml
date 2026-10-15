@@ -1,0 +1,18 @@
+# conformance-kit: what glyphs is held to (zoolutions/phlex-reactive#363, #25).
+audit:
+  require: [./spec/conformance_eager_load.rb]
+  namespace: [Glyphs]
+  strict_autoloads: true
+ractor:
+  test_command: bundle exec rspec --tag ractor
+probes:
+  gem_name: glyphs
+main_only:
+  - name: Glyphs.@lock
+    reason: >-
+      guards the boot-time writers (configure, register_library, finalize!, reset_configuration!), which only
+      the main Ractor calls; the readers (configuration, svg_for) never take it
+  # Only the ivars Rails::Railtie's class methods write, so state glyphs adds to its Railtie is still audited.
+  - ancestor: Rails::Railtie
+    ivars: ["@rake_tasks", "@load_console", "@runner", "@generators", "@server", "@instance", "@railtie_name", "@load_index"]
+    reason: Rails::Railtie's own class state, set by Rails at boot on the main Ractor

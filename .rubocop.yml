@@ -1,3 +1,6 @@
+inherit_gem:
+  conformance-kit: config/rubocop.yml
+
 plugins:
   - rubocop-performance
   - rubocop-rake
@@ -86,6 +89,7 @@ RSpec/DescribeClass:
   Exclude:
     - spec/glyphs/kit_spec.rb
     - spec/glyphs/register_library_spec.rb
+    - spec/glyphs/ractor_canary_spec.rb
 
 RSpec/DescribeMethod:
   Exclude:
@@ -94,9 +98,14 @@ RSpec/DescribeMethod:
 RSpec/RemoveConst:
   Exclude:
     - spec/glyphs/register_library_spec.rb
+    - spec/glyphs/register_library_race_spec.rb
 
 RSpec/SpecFilePathFormat:
   Exclude:
     - spec/glyphs/kit_spec.rb
     - spec/glyphs/register_library_spec.rb
     - spec/rubocop/plugin_spec.rb
+    # Glyphs-level behaviours, one file each (#25)
+    - spec/glyphs/contention_spec.rb
+    - spec/glyphs/register_library_race_spec.rb
+    - spec/glyphs/svg_cache_bound_spec.rb

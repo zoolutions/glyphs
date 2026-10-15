@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "monitor"
 require "phlex"
 require "icons"
 require "zeitwerk"
@@ -32,21 +33,32 @@ Icons.config
 module Glyphs
   extend Phlex::Kit
 
-  @svg_cache = {}
-  @svg_cache_mutex = Mutex.new
+  # Guards the boot-time writers (configure, register_library, finalize!). A
+  # Monitor, so a configure block may call register_library. Main Ractor only:
+  # readers never take it, so svg_for runs in any Ractor once finalized.
+  @lock = Monitor.new
+  @configuration = Configuration.new
 
   class << self
+    # The current configuration: a plain read, shareable after finalize!.
+    attr_reader :configuration
+
     def configure
-      yield(configuration) if block_given?
+      @lock.synchronize { yield(@configuration) if block_given? }
       configuration
     end
 
-    def configuration
-      @configuration ||= Configuration.new
+    def reset_configuration!
+      @lock.synchronize { @configuration = Configuration.new }
     end
 
-    def reset_configuration!
-      @configuration = Configuration.new
+    # Freezes the configuration so svg_for can run inside a non-main Ractor
+    # (see Configuration#finalize!; never raises). Glyphs::Railtie calls it once
+    # a Rails app has booted; outside Rails, call it at the end of boot, after
+    # every configure. reset_configuration! (tests) starts over with a fresh one.
+    def finalize!
+      @lock.synchronize { @configuration.finalize! }
+      self
     end
 
     # Defines a `Glyphs::Icon` subclass for a custom icon library and exposes it
@@ -59,31 +71,51 @@ module Glyphs
       library = library.to_sym
       name = component.to_sym
 
-      if const_defined?(name, false)
-        existing = const_get(name, false)
-        return existing if existing < Icon && library == existing::LIBRARY
+      @lock.synchronize do
+        if const_defined?(name, false)
+          existing = const_get(name, false)
+          return existing if existing < Icon && library == existing::LIBRARY
 
-        raise ArgumentError, "Glyphs::#{name} is already defined and does not render the #{library} library"
+          raise ArgumentError, "Glyphs::#{name} is already defined and does not render the #{library} library"
+        end
+
+        klass = Class.new(Icon)
+        klass.const_set(:LIBRARY, library)
+        const_set(name, klass)
       end
-
-      klass = Class.new(Icon)
-      klass.const_set(:LIBRARY, library)
-      const_set(name, klass)
     end
 
     # Returns the SVG markup for an icon, applying the configured missing-icon
-    # policy (raise / instrument / fallback) and an optional per-process cache.
+    # policy (raise / instrument / fallback) and the per-Ractor cache: one
+    # entry per [library, variant, name], the caller's attributes applied to
+    # the cached markup on every call.
     def svg_for(name:, library:, variant:, attributes:)
       return render_svg(name:, library:, variant:, attributes:) unless configuration.cache_svgs
 
-      key = [library, variant, name, attributes]
-      @svg_cache_mutex.synchronize do
-        @svg_cache[key] ||= render_svg(name:, library:, variant:, attributes:)
+      data = attributes.key?(:data)
+      template = svg_cache.compute_if_absent([library, variant, name, data], configuration.svg_cache_size) do
+        markup = render_svg(name:, library:, variant:, attributes: data ? SvgTemplate::DATA_SLOT : {})
+        SvgTemplate.new(markup, data_slot: data)
       end
+      template.render(attributes) || render_svg(name:, library:, variant:, attributes:)
     end
 
+    # Seeds this Ractor's cache with markup rendered elsewhere, e.g. on the
+    # main Ractor (which can run the icons gem and Nokogiri) for a Ractor that
+    # cannot. Calls with a data: attribute still render through the icons gem.
+    def preload_svg(name:, library:, svg:, variant: nil)
+      key = [library.to_sym, variant&.to_sym, name.to_s.tr("_", "-"), false]
+      svg_cache.store(key, SvgTemplate.new(svg), configuration.svg_cache_size)
+    end
+
+    # The current Ractor's SvgCache.
+    def svg_cache
+      Store.fetch(:glyphs_svg_cache) { SvgCache.new }
+    end
+
+    # Empties the current Ractor's cache (other Ractors keep theirs).
     def reset_cache!
-      @svg_cache_mutex.synchronize { @svg_cache = {} }
+      svg_cache.clear
     end
 
     private
