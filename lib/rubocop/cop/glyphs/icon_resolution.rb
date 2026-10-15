@@ -290,16 +290,22 @@ module RuboCop
           self.class.available_icons_for(icons_base_path, library_dir, variant)
         end
 
+        # Guards the two class-level memos below: RuboCop builds a cop instance
+        # per file, and a server or LSP process may inspect files on threads.
+        @memo_lock = Mutex.new
+
         class << self
           # nil when the directory is absent, [] when it exists but ships no
           # SVGs — the caller has to tell those apart. Memoized with `key?` (not
           # `||=`) so a nil result is not re-probed on every call site.
           def available_icons_for(base_path, library_dir, variant)
-            @available_icons_cache ||= {}
             key = [base_path, library_dir, variant]
-            return @available_icons_cache[key] if @available_icons_cache.key?(key)
+            @memo_lock.synchronize do
+              @available_icons_cache ||= {}
+              return @available_icons_cache[key] if @available_icons_cache.key?(key)
 
-            @available_icons_cache[key] = load_icons(directory_for(base_path, library_dir, variant))
+              @available_icons_cache[key] = load_icons(directory_for(base_path, library_dir, variant))
+            end
           end
 
           def directory_for(base_path, library_dir, variant)
@@ -309,15 +315,15 @@ module RuboCop
           # RuboCop builds a fresh cop instance per file, so deduplicating the
           # missing-directory warning has to outlive the instance.
           def warn_once(message)
-            @warned_messages ||= {}
-            return if @warned_messages.key?(message)
-
-            @warned_messages[message] = true
-            warn message
+            first = @memo_lock.synchronize do
+              @warned_messages ||= {}
+              !@warned_messages.key?(message) && (@warned_messages[message] = true)
+            end
+            warn message if first
           end
 
           def reset_warnings!
-            @warned_messages = nil
+            @memo_lock.synchronize { @warned_messages = nil }
           end
 
           private
