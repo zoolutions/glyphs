@@ -55,6 +55,14 @@ class Views::Docs::Pages::MissingIcons < DocsUI::Page
           end
         end
       RUBY
+      md <<~'MD'
+        Glyphs freezes its configuration once the app has booted, so it can be
+        read from any Ractor. A lambda like this one closes over the
+        initializer's `self`, so it cannot be shared: it is kept as is and keeps
+        working, and the configuration stays readable on the main Ractor only.
+        A frozen object with a `#call` method, or `Ractor.shareable_proc`
+        (Ruby 4.0+), can be read from every Ractor.
+      MD
     end
   end
 

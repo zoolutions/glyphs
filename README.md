@@ -110,15 +110,21 @@ end
 
 ## Ractors
 
-Call `Glyphs.finalize!` once at the end of boot, after every `Glyphs.configure`. It deep-freezes the
-configuration so it can be read from any Ractor; an unshareable setting raises `ArgumentError` naming
-it. `on_missing_icon` is the usual one: a lambda that closes over `self` (like the one above) cannot be
-shared, a frozen object with a `#call` method or `Ractor.shareable_proc` (Ruby 4.0+) can.
+In a Rails app glyphs finalizes its configuration once the app has booted (`after_initialize`, after every
+`config/initializers` file), with no code of yours: the configuration is frozen and every setting that can be
+is made Ractor-shareable, so `svg_for` can read it from any Ractor. Outside Rails, call `Glyphs.finalize!`
+once at the end of boot, after every `Glyphs.configure`.
 
-```ruby
-# config/initializers/glyphs.rb, after Glyphs.configure
-Rails.application.config.after_initialize { Glyphs.finalize! }
-```
+From then on the configuration is read-only, and writing to it raises `FrozenError`. Configure glyphs in an
+initializer, not in a `config.after_initialize` block of your own (that runs after glyphs' hook). In tests,
+`Glyphs.reset_configuration!` starts over with a fresh, writable configuration.
+
+Finalizing never raises and never freezes an object of yours: a collection setting becomes a frozen copy, and
+a value that cannot be shared is kept as is. `on_missing_icon` is the usual one: a lambda that closes over the
+initializer's `self` (like the one above) or a callable holding a logger. The configuration then stays
+readable on the main Ractor only, which is all an app without Ractors needs; another Ractor reading it raises
+`Ractor::IsolationError`. To use glyphs from other Ractors, give `on_missing_icon` a shareable value: a frozen
+object with a `#call` method (and nothing unshareable inside) or `Ractor.shareable_proc` (Ruby 4.0+).
 
 The icons gem cannot render inside a non-main Ractor today (its configuration is unshareable module
 state, and Nokogiri is Ractor-unsafe), so each Ractor's cache starts empty and a miss there raises.
