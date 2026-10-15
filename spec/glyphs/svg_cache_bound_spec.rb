@@ -27,6 +27,15 @@ RSpec.describe Glyphs, ".svg_for cache bound" do
     expect(described_class.svg_cache.size).to be <= 2
   end
 
+  it "trims to a lowered svg_cache_size on a hit, not only on a miss" do
+    %w[house circle-check triangle-alert].each { |name| svg_for(name) }
+    described_class.configure { |config| config.svg_cache_size = 1 }
+
+    svg_for("house")
+
+    expect(described_class.svg_cache.size).to eq(1)
+  end
+
   it "holds one entry per icon, whatever attributes render it" do
     1_000.times { |i| svg_for(class: "size-#{i}", id: "icon-#{i}") }
 

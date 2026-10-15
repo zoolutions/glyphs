@@ -12,14 +12,13 @@ module Glyphs
     end
 
     # The cached value for `key` (never nil), marked most recently used; on a
-    # miss, the block's value, stored and trimmed to `limit` entries. The block
-    # runs under the lock, so a missing icon is rendered (and reported) once.
+    # miss, the block's value, stored. Either way the cache is trimmed to
+    # `limit` entries, so a lowered svg_cache_size applies on the next call. The
+    # block runs under the lock, so a missing icon is rendered (and reported) once.
     def compute_if_absent(key, limit)
       @lock.synchronize do
-        hit = @entries.delete(key) # re-inserted below: most recently used
-        return @entries[key] = hit if hit
-
-        insert(key, yield, limit)
+        hit = @entries[key]
+        insert(key, hit.nil? ? yield : hit, limit)
       end
     end
 
