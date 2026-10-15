@@ -62,7 +62,7 @@ class Views::Docs::Pages::MissingIcons < DocsUI::Page
     DocsUI::Section("Interaction with the SVG cache") do
       md <<~'MD'
         Fallback renders are cached under the *original* icon name, so
-        `on_missing_icon` fires **once per process per missing icon**, not on
+        `on_missing_icon` fires **once per missing icon while it is cached**, not on
         every render — your logs stay readable while the fallback keeps
         rendering. Set `config.cache_svgs = false` to trade that for a
         notification per render.

@@ -96,11 +96,38 @@ Glyphs.configure do |config|
     heroicons: "question-mark-circle"
   }
 
-  # Memoize rendered SVG strings per [library, variant, name, attributes]. Default: true.
+  # Memoize rendered SVGs per [library, variant, name]; the call's attributes
+  # (class:, data:, ...) are applied to the cached markup each time. Default: true.
   # Note: fallback renders are cached under the original name, so on_missing_icon
-  # fires once per process per missing icon rather than on every render.
+  # fires once per missing icon while it stays cached, rather than on every render.
   config.cache_svgs = true
+
+  # How many icons the cache holds (least recently used evicted first). One
+  # cache per Ractor, so a plain threaded server has one. Default: 1024.
+  config.svg_cache_size = 1024
 end
+```
+
+## Ractors
+
+Call `Glyphs.finalize!` once at the end of boot, after every `Glyphs.configure`. It deep-freezes the
+configuration so it can be read from any Ractor; an unshareable setting raises `ArgumentError` naming
+it. `on_missing_icon` is the usual one: a lambda that closes over `self` (like the one above) cannot be
+shared, a frozen object with a `#call` method or `Ractor.shareable_proc` (Ruby 4.0+) can.
+
+```ruby
+# config/initializers/glyphs.rb, after Glyphs.configure
+Rails.application.config.after_initialize { Glyphs.finalize! }
+```
+
+The icons gem cannot render inside a non-main Ractor today (its configuration is unshareable module
+state, and Nokogiri is Ractor-unsafe), so each Ractor's cache starts empty and a miss there raises.
+Render on the main Ractor and hand the markup over with `Glyphs.preload_svg`; cache hits, attributes
+included, then work in that Ractor:
+
+```ruby
+svg = Glyphs.svg_for(name: "house", library: :lucide, variant: nil, attributes: {}) # main Ractor
+Glyphs.preload_svg(name: "house", library: :lucide, svg:)                           # in the Ractor
 ```
 
 ## Shrinking icons in Docker

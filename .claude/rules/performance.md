@@ -19,7 +19,7 @@ Any change to a **hot path** must come with a measurement and a before/after:
 
 | Hot path | File |
 |----------|------|
-| Per-render SVG resolution + cache | `lib/glyphs.rb` (`svg_for`, `render_svg`, `build_svg`, `@svg_cache`) |
+| Per-render SVG resolution + cache | `lib/glyphs.rb` (`svg_for`, `render_svg`, `build_svg`), `lib/glyphs/svg_cache.rb`, `lib/glyphs/svg_template.rb` |
 | Icon component render | `lib/glyphs/icon.rb` (`view_template`, attribute merge) |
 | Source scan (build-time, whole repo) | `lib/glyphs/source_scanner.rb` (`scan`, `scan_ruby`, `scan_template`, `glob`) |
 | Prune wiring | `lib/glyphs/prune_runner.rb` (`references`, `pruner`) |
@@ -51,11 +51,11 @@ A pure docs/test/refactor change with no hot-path edit does not need a bench.
    lines beat a clever micro-optimization that obscures behavior for no measured
    gain. Icon registration (`register_library`) runs once at boot; don't tune it.
 3. **Never break a correctness invariant for speed** — the missing-icon policy
-   (raise / instrument / fallback), the thread-safe cache (mutex-guarded
-   `@svg_cache`), and the scanner's dynamic-call harvesting (a name it fails to
+   (raise / instrument / fallback), the thread-safe cache (the mutex-guarded
+   per-Ractor `SvgCache`), and the scanner's dynamic-call harvesting (a name it fails to
    see gets a live SVG pruned) are not negotiable. A faster wrong answer is wrong.
 4. **Never make the cache thread-unsafe for a marginal win.** `svg_for` is called
-   concurrently under a threaded server; the `@svg_cache_mutex.synchronize` guard
+   concurrently under a threaded server; the `SvgCache` lock
    stays. Hoisting a key computation or freezing a constant: yes. Dropping the
    lock or swapping to an unsynchronized structure: only if the bench proves it
    matters AND thread-safety is preserved and tested.
@@ -65,12 +65,16 @@ A pure docs/test/refactor change with no hot-path edit does not need a bench.
 
 ## Caching for speed — the correctness guards
 
-The render path memoizes rendered SVG strings in `@svg_cache`, keyed by
-`[library, variant, name, attributes]` (see `svg_for` in `lib/glyphs.rb`):
+The render path memoizes rendered SVGs as `SvgTemplate`s in a bounded, per-Ractor
+LRU (`Glyphs.svg_cache`, `svg_cache_size` entries), keyed by
+`[library, variant, name, data:-given?]` (see `svg_for` in `lib/glyphs.rb`); each
+call's attributes are applied to the cached markup:
 
-- **Key the cache on everything that changes the output.** The key already
-  includes `attributes`, so two calls with different classes/sizes don't collide.
-  A bare `@x ||=` that ignores a changeable input serves stale markup.
+- **Key the cache on everything that changes the cached bytes, never on per-call
+  input.** Attributes stay out of the key (a dynamic `id:` per render made the old
+  attribute-keyed cache grow without bound); they are merged on every call, and
+  `spec/glyphs/svg_template_spec.rb` holds that merge byte-identical to the icons
+  gem's own render. A bare `@x ||=` that ignores a changeable input serves stale markup.
 - **Honor the toggle.** `svg_for` bypasses the cache entirely when
   `configuration.cache_svgs` is false — keep that early return; don't populate the
   cache on the uncached path.

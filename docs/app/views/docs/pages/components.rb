@@ -55,9 +55,11 @@ class Views::Docs::Pages::Components < DocsUI::Page
         Glyphs::LucideIcon.new(:house).call # => "<svg ...>" (standalone string)
       RUBY
       md <<~'MD'
-        Rendered SVGs are memoized per `[library, variant, name, attributes]`
-        in a per-process cache — repeated renders of the same icon skip the
-        file read and Nokogiri parse. Disable with `config.cache_svgs = false`.
+        Rendered SVGs are memoized per `[library, variant, name]` in a bounded
+        LRU cache (`config.svg_cache_size`, 1024 by default, one per Ractor);
+        each call's attributes are applied to the cached markup, so repeated
+        renders of an icon skip the file read and Nokogiri parse whatever their
+        `class:` or `id:`. Disable with `config.cache_svgs = false`.
       MD
     end
   end
