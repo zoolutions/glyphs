@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "logger"
+require "stringio"
+
 RSpec.describe Glyphs, ".finalize!" do
   it_behaves_like "a boot-finalized configuration",
     readers: [described_class.method(:configuration), Glyphs::IconReference.method(:component_to_library)],
@@ -30,12 +33,51 @@ RSpec.describe Glyphs, ".finalize!" do
     expect(described_class.configuration.cache_svgs).to be(false)
   end
 
-  it "names an on_missing_icon that cannot be shared" do
+  it "keeps an on_missing_icon that cannot be shared as is, and freezes the rest" do
     skip "no Ractor on #{RUBY_ENGINE}" unless defined?(Ractor)
-    described_class.configure { |config| config.on_missing_icon = ->(error, **) { warn error.message } }
+    hook = ->(error, **) { warn error.message } # closes over the example: unshareable
+    described_class.configure { |config| config.on_missing_icon = hook }
 
-    expect { described_class.finalize! }
-      .to raise_error(ArgumentError, /Glyphs.finalize!: on_missing_icon is not Ractor-shareable/)
+    expect { described_class.finalize! }.not_to raise_error
+
+    configuration = described_class.configuration
+    expect(configuration.on_missing_icon).to be(hook)
+    expect([configuration, configuration.fallback_icons]).to all(be_frozen)
+    expect(Ractor.shareable?(configuration.fallback_icons)).to be(true)
+    expect(Ractor.shareable?(configuration)).to be(false) # main Ractor only, as documented
+  end
+
+  it "never freezes an object of the app's, even one it cannot share" do
+    skip "no Ractor on #{RUBY_ENGINE}" unless defined?(Ractor)
+    logger = Logger.new(StringIO.new) # its LogDevice holds a Monitor: unshareable
+    hook = Struct.new(:logger) { def call(error, **) = logger.warn(error.message) }.new(logger)
+    described_class.configure { |config| config.on_missing_icon = hook }
+
+    described_class.finalize!
+
+    expect(described_class.configuration.on_missing_icon).to be(hook)
+    expect([hook, logger, logger.instance_variable_get(:@logdev)].select(&:frozen?)).to be_empty
+    expect { hook.call(StandardError.new("gone")) }.not_to raise_error
+  end
+
+  it "freezes a copy of a collection the app passed, never the app's own" do
+    names = %w[menu palette]
+    described_class.configure { |config| config.keep_icons = names }
+
+    described_class.finalize!
+
+    expect(described_class.configuration.keep_icons).to eq(%w[menu palette]).and be_frozen
+    expect(names).not_to be_frozen
+  end
+
+  it "makes a capture-free on_missing_icon lambda shareable" do
+    skip "no Ractor on #{RUBY_ENGINE}" unless defined?(Ractor)
+    hook = Module.new.instance_exec { ->(error, **) { warn error.message } } # self is a module: shareable
+    described_class.configure { |config| config.on_missing_icon = hook }
+
+    described_class.finalize!
+
+    expect(Ractor.shareable?(described_class.configuration)).to be(true)
   end
 
   it "accepts a shareable on_missing_icon" do

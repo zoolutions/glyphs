@@ -46,24 +46,34 @@ module Glyphs
       @svg_cache_size = size
     end
 
-    # Deep-freezes the configuration so it is Ractor-shareable (see
-    # Glyphs.finalize!). Raises ArgumentError naming the setting whose value
-    # cannot be shared, e.g. an on_missing_icon lambda that closes over self.
+    # Freezes the configuration and makes every setting Ractor-shareable that
+    # can be, so svg_for can read it from a non-main Ractor. Glyphs.finalize!
+    # calls it (in a Rails app, Glyphs::Railtie does after boot). Never raises
+    # and never freezes an object the app still holds: a collection becomes a
+    # frozen copy, and a value that cannot be shared (an on_missing_icon lambda
+    # closing over self, a callable holding a logger) is kept as is, which
+    # leaves the configuration readable on the main Ractor only.
     def finalize!
-      return freeze unless defined?(::Ractor)
+      return self if frozen?
 
-      instance_variables.each { |ivar| make_shareable(ivar) }
-      ::Ractor.make_shareable(self)
+      if defined?(::Ractor)
+        instance_variables.each { |ivar| instance_variable_set(ivar, shareable(instance_variable_get(ivar))) }
+      end
+      freeze
     end
 
     private
 
-    def make_shareable(ivar)
-      ::Ractor.make_shareable(instance_variable_get(ivar))
-    rescue ::Ractor::Error => e # IsolationError included
-      raise ArgumentError, "Glyphs.finalize!: #{ivar.to_s.delete_prefix('@')} is not Ractor-shareable " \
-                           "(#{e.message}). Give it a shareable value, e.g. a frozen object that responds " \
-                           "to #call, or Ractor.shareable_proc on Ruby 4.0+."
+    def shareable(value)
+      return value if ::Ractor.shareable?(value)
+
+      case value
+      when ::Proc then ::Ractor.make_shareable(value) # a Proc cannot be copied; a failed attempt freezes nothing
+      when ::Hash, ::Array, ::String then ::Ractor.make_shareable(value, copy: true)
+      else value # an app's object: freezing it in place would freeze what it refers to (its logger) too
+      end
+    rescue StandardError # Ractor::Error, or TypeError/ArgumentError for what cannot be copied or shared
+      value
     end
   end
 end
