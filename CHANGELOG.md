@@ -1,6 +1,8 @@
 # Changelog
 
-## [0.3.0]
+## [Unreleased]
+
+## [0.3.0] - 2026-10-15
 
 ### Changed
 
@@ -135,6 +137,23 @@
   This makes `keep_icons` a last-resort escape hatch (DB/ENV/gem-chrome names)
   rather than the primary mechanism. Only literals are harvested, so the scanner
   never invents a reference.
+
+## [0.2.1] - 2026-07-11
+
+### Added
+
+- **`glyphs:prune_icons` prunes unused icons for smaller Docker images.**
+  `Glyphs::SourceScanner` finds the icons an app references and the task deletes
+  every other synced SVG in the Docker build, keeping `config.keep_icons` (new,
+  for dynamic or data-driven names) and every `fallback_icons` entry, then
+  verifies each kept icon still resolves. Dry-run by default; it deletes only
+  with `PRUNE=1 GLYPHS_PRUNE_ICONS=1`. `config.prune_source_globs` adds paths to
+  scan. Refs #2
+
+### Changed
+
+- **Breaking:** `required_ruby_version` is now `>= 3.4` (CI runs 3.4 and 4.0).
+  Refs #2
 
 ## [0.2.0] - 2026-07-07
 
