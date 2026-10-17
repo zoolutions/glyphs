@@ -1,8 +1,9 @@
 # Glyphs
 
 Project instructions for every agent: Claude Code (`CLAUDE.md` imports this file), and any other
-tool that reads `AGENTS.md` directly. Claude-only extras (commands, standing rules) live under
-`.claude/`.
+tool that reads `AGENTS.md` directly. The delivery workflow (`/flow:lfg`, `/flow:plan`, …) is the
+`flow` plugin from the `claude-plugins` marketplace; `/ruby-gem:release` and `/ruby-gem:perf` come
+from `ruby-gem`. Both are enabled in `.claude/settings.json`. Local extras live under `.claude/`.
 
 ## What this is
 
@@ -48,14 +49,53 @@ and publishes to RubyGems. Both files and the shared jobs of `release.yml` are t
 release kit (canonical copy in docs-kit, `RELEASE_KIT.md`): never edit them here. To re-publish a
 release whose workflow failed, fix `main` and run `bin/release X.Y.Z --force` (the publish skips a
 version that is already on RubyGems). `rake build` builds the gem locally and lists its files for a manual check.
+Never `gem push` by hand and never bump `version.rb` in a feature PR: `rake release` owns the version.
 Changelog entries go under `## [Unreleased]` in `CHANGELOG.md`, grouped by `### Added` /
 `### Fixed` / etc.
+
+## Invariants
+
+- **Resolve through `Glyphs.svg_for`.** Components never call `Icons::Icon` directly; that skips
+  `raise_on_missing`, `on_missing_icon`, `fallback_icons` and `cache_svgs`. A library component is a
+  tiny `Icon` subclass that only declares `LIBRARY`.
+- **The missing-icon policy is configured**, never hardcoded: raise, instrument, or fall back.
+- **Pruning errs toward keeping.** The scanner harvests only static names (Prism AST, plus the
+  template text scan); dynamic ones are covered by `keep_icons`. A parse failure warns and skips that
+  one file, never a whole glob. The pruner never deletes `keep_icons` or `fallback_icons`;
+  `PruneRunner#verify!` aborts before deleting on an empty scan.
+- **The SVG cache** (`SvgCache`, per-Ractor LRU) keys on everything that changes the cached bytes
+  (`[library, variant, name, data:-given?]`) and never on per-call attributes, which are merged on
+  every call. It stays mutex-guarded and `reset_cache!`-clearable; `cache_svgs = false` bypasses it.
+- **Specs** point `Icons.config.base_path` at `spec/fixtures`; no Rails app boots. Cop specs assert
+  `expect_offense` and `expect_correction`. Scanner specs cover static AST calls and dynamic/text
+  harvesting; pruner specs prove a referenced SVG and a `keep_icons` entry survive. 100% coverage on
+  the pruner, `svg_for` resolution, the scanner and cop autocorrection; 80% elsewhere.
+- **No speed claim without a same-machine before/after** (throughput and allocations, per render
+  not per request). Hot paths: `lib/glyphs.rb` (`svg_for`, `render_svg`, `build_svg`),
+  `svg_cache.rb`, `svg_template.rb`, `icon.rb`, `source_scanner.rb`, `prune_runner.rb`. Never trade
+  one of the invariants above for speed.
+- Commit scopes: `scanner`, `prune`, `config`, `rubocop`, `icon`, `rake`, `docs`, `ci`, `chore`.
+
+## Workflow
+
+- **Verify:** `bundle exec rubocop lib spec` · `bundle exec rspec` · docs app, before a PR touching `docs/`: `cd docs && bundle exec rubocop && bundle exec rspec`
+- **Specs:** fast loop `bundle exec rspec <file>`; full suite `bundle exec rspec` (Ractor subset `--tag ractor`); two worktrees at once: yes, no shared state
+- **CI:** `main.yml` jobs Lint, Gem Tests (Ruby 3.4 / 4.0), Docs Lint, Docs Tests; required checks (ruleset `main`) are only `conformance / Conformance settings` and `conformance / Conformance (Ruby 4.0)`; full suite on the PR; failure report none
+- **Review bot:** cubic
+- **Merge:** squash — `gh pr merge <PR> --squash --delete-branch` (no merge queue)
+- **PR contract:** body with summary and test plan; exactly one `type` label and at least one `area` label (`bin/labels infer <paths>`), never `status`; rendering or `docs/` changes attach before/after pictures (below)
+- **Conflicts:** `CHANGELOG.md` — union under `## [Unreleased]`, no duplicated subheads; `lib/glyphs/version.rb` — take main's; `Gemfile.lock`, `docs/Gemfile.lock` — take main's, then `bundle install` at the root / in `docs/`; `docs/app/models/doc.rb`, `docs/config/routes.rb`, icon-subclass registrations — keep both appended lines
+- **Worktree setup:** `bundle install`; in `docs/`: `bundle install` when working there
+- **Release:** `bin/release <v>`; changelog `CHANGELOG.md`, `## [Unreleased]`; lockfiles `Gemfile.lock` `docs/Gemfile.lock`; docs `deploy-docs.yml` on release; prep none; human none
+- **Main health:** `gh run list --workflow main.yml --branch main --event push --limit 1 --json conclusion,headSha`
+- **Upstream:** libraries we own `zoolutions/*`; scrub none
+- **Bench:** `bundle exec ruby bench/svg_for.rb` (Glyphs.svg_for per call); CI holds none
 
 ## Labels
 
 Every pull request carries exactly one `type` label and at least one `area`
-label from `.github/labels.yml` — never a `status` label. `/plan` labels the
-issue, `/lfg` copies the issue's `type` and `area` labels onto the PR (never
+label from `.github/labels.yml` — never a `status` label. `/flow:plan` labels the
+issue, `/flow:lfg` copies the issue's `type` and `area` labels onto the PR (never
 `plan` or another status label). Without an issue, the type comes from the
 change's conventional-commit prefix and the areas from
 `bin/labels infer $(git diff --name-only origin/main...HEAD)`. Labels change in
@@ -91,4 +131,7 @@ gh issue comment <n> --attach ./repro.mp4                       # video renders 
 
 ## Models
 
-**Models.** Sessions run on `opus` (Opus 5.5) with `fable` (Fable 5.1) as the advisor (`.claude/settings.json`). Fable is spent where judgment matters most: `/plan` runs on Fable, the advisor is consulted at decision points (before choosing an approach, a schema or public API, a migration, a dependency, anything irreversible, and when a failure repeats), and the `fable-validator` agent checks every finished implementation before its pull request opens (`/lfg`, Phase 6.5). Commands pin their tier by alias, never by full model ID: `opus` for orchestration, security, full PR review, payments and production debugging; `sonnet` for the implementation specialists and TDD; `haiku` for mechanical scans. Every spawned agent names its `model:`; one that does not runs on `sonnet` (`CLAUDE_CODE_SUBAGENT_MODEL`), never on the session's model. Plan mode cannot take a model of its own: it runs on Opus and asks the advisor.
+Sessions run on `opus` with `fable` as the advisor (`.claude/settings.json`); `/flow:plan` runs on
+Fable and `flow:fable-validator` checks every finished implementation before its PR opens. Name
+a `model:` on every spawned agent: one that does not runs on `sonnet`
+(`CLAUDE_CODE_SUBAGENT_MODEL`), never on the session's model.
