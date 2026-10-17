@@ -5,8 +5,7 @@ the whole team (and every autonomous session) shares the same conventions.
 
 ```
 .claude/
-├── commands/          Slash commands (/lfg, /tdd, /plan, /security, …) — one markdown file each
-├── rules/             Standing rules (agents, coding-style, git-workflow, performance, testing)
+├── commands/          Local slash commands (/architect, /security) — one markdown file each; the delivery workflow is the `flow` plugin
 ├── README.md          This file — how to author a command
 └── SKILL_TEMPLATE.md  Copy-paste starting point for a new command
 ```
@@ -14,7 +13,7 @@ the whole team (and every autonomous session) shares the same conventions.
 ## Anatomy of a command
 
 A command is a markdown file under `commands/` with a YAML frontmatter block
-followed by the prompt body. `.claude/commands/tdd.md` is a good reference.
+followed by the prompt body. `.claude/commands/security.md` is a good reference.
 
 ```markdown
 ---
@@ -47,17 +46,17 @@ latest model in that tier, so a command never goes stale on an outdated pin.
 | Tier | Use for | Commands here |
 |------|---------|---------------|
 | `haiku` | Mechanical / config work, diff pattern-scanning | *(none yet)* |
-| `sonnet` | Prescriptive, pattern-following passes with a tight prompt | `/github-review-comments`, `/github-review-failures` |
-| `opus` | Orchestration, security, review synthesis, and reasoning-heavy specialists | `/lfg`, `/architect`, `/security`, `/review-pr`, `/github-review-pr`, `/tdd`, `/perf` |
-| `fable` | Read-only planning that hands execution to cheaper models | `/plan` |
+| `sonnet` | Prescriptive, pattern-following passes with a tight prompt | *(none yet)* |
+| `opus` | Orchestration, security, review synthesis, and reasoning-heavy specialists | `/architect`, `/security` |
+| `fable` | Read-only planning that hands execution to cheaper models | `/flow:plan` (plugin) |
 
 Rules of thumb:
 
 - **Always use the alias**, never `claude-opus-4-8` or another full model ID —
   aliases track the latest model per tier and never rot.
-- **`fable` is pinned only on `/plan`.** Sessions run on `opus` with `fable` as the
-  advisor (`.claude/settings.json`), and the `fable-validator` agent checks a finished
-  change before its pull request opens (`/lfg`, Phase 6.5).
+- **`fable` is pinned only on `/flow:plan`.** Sessions run on `opus` with `fable` as the
+  advisor (`.claude/settings.json`), and the `flow:fable-validator` agent checks a finished
+  change before its pull request opens (`/flow:lfg`).
 - **Subagents don't inherit the tier for free.** When a command (or you) spawns a
   subagent for mechanical work — file finding, naming-convention sweeps, pattern
   scans (e.g. sweeping the 13 `*_icon.rb` subclasses or the cop specs) — pass a
@@ -66,7 +65,7 @@ Rules of thumb:
 
 ## Authoring a new command
 
-1. Copy an existing command (`.claude/commands/tdd.md`) into `commands/{name}.md`
+1. Copy an existing command (`.claude/commands/security.md`) into `commands/{name}.md`
    and strip it down to the frontmatter plus a fresh prompt body.
 2. Pick the tier by the table above.
 3. Write a `description` that leads with what it does and when to use it.
