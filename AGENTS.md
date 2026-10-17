@@ -62,7 +62,7 @@ Changelog entries go under `## [Unreleased]` in `CHANGELOG.md`, grouped by `### 
 - **Pruning errs toward keeping.** The scanner harvests only static names (Prism AST, plus the
   template text scan); dynamic ones are covered by `keep_icons`. A parse failure warns and skips that
   one file, never a whole glob. The pruner never deletes `keep_icons` or `fallback_icons`;
-  `PruneRunner#verify!` aborts before deleting on an empty scan.
+  `IconPruner` skips any library with no reference, fallback or per-library `keep_icons` entry. `PruneRunner#verify!` runs after the prune and fails the build if a kept icon is missing.
 - **The SVG cache** (`SvgCache`, per-Ractor LRU) keys on everything that changes the cached bytes
   (`[library, variant, name, data:-given?]`) and never on per-call attributes, which are merged on
   every call. It stays mutex-guarded and `reset_cache!`-clearable; `cache_svgs = false` bypasses it.
