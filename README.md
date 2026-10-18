@@ -130,11 +130,17 @@ readable on the main Ractor only, which is all an app without Ractors needs; ano
 object with a `#call` method that `Ractor.shareable?` accepts (frozen, with nothing unshareable inside) or
 `Ractor.shareable_proc` (Ruby 4.0+).
 
-The icons gem cannot render inside a non-main Ractor today (its configuration is unshareable module
-state, and Nokogiri is Ractor-unsafe), so each Ractor's cache starts empty and a miss there raises.
-Render on the main Ractor and hand the markup over with `Glyphs.preload_svg`; cache hits then work in that
-Ractor for calls without `data:` whose attributes the cache can apply (a `data:` call, or one with an attribute
-that renders uncached, still needs the icons gem):
+The icons gem cannot render inside a non-main Ractor (its configuration is unshareable module state, and
+Nokogiri is not marked Ractor-safe), so a miss in one renders on the main Ractor instead, through
+[ractor-dispatch](https://github.com/jhawthorn/ractor-dispatch) (Ruby 4.0+). Rails 8.2 apps have it through
+Active Support; elsewhere, add `gem "ractor-dispatch"`. The markup is the main Ractor's, byte for byte, and
+the calling Ractor's cache keeps it, so each icon crosses once per cache entry; cache hits never leave the
+Ractor. The missing-icon policy runs on the main Ractor too, `on_missing_icon` included. A call with an
+attribute that renders uncached, or any call with `cache_svgs = false`, goes to the main Ractor every time.
+
+Without ractor-dispatch, a miss in a non-main Ractor raises `Glyphs::MainRactor::Unavailable`, naming the
+icon. You can still render on the main Ractor and hand the markup over with `Glyphs.preload_svg`; cache hits
+then work in that Ractor for calls without `data:` whose attributes the cache can apply:
 
 ```ruby
 svg = Glyphs.svg_for(name: "house", library: :lucide, variant: nil, attributes: {}) # main Ractor

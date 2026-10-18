@@ -120,7 +120,15 @@ module Glyphs
 
     private
 
+    # A non-main Ractor cannot run the icons gem, so it renders on the main
+    # Ractor (see MainRactor); the missing-icon policy runs there too.
     def render_svg(name:, library:, variant:, attributes:)
+      return MainRactor.render(name:, library:, variant:, attributes:) unless MainRactor.current?
+
+      resolve_svg(name:, library:, variant:, attributes:)
+    end
+
+    def resolve_svg(name:, library:, variant:, attributes:)
       build_svg(name:, library:, variant:, attributes:)
     rescue Icons::IconNotFound => e
       handle_missing_icon(e, name:, library:, variant:, attributes:)

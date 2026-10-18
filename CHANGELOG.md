@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Added
+
+- **A non-main Ractor renders icons it has not cached.** A miss there used to
+  raise `Ractor::IsolationError` (`@configuration from Icons`), because the
+  icons gem reads an unshareable module ivar and parses with Nokogiri, which
+  only the main Ractor can run. `Glyphs::MainRactor` now renders the miss on
+  the main Ractor through [ractor-dispatch](https://github.com/jhawthorn/ractor-dispatch)
+  (Ruby 4.0+, a dependency of Rails 8.2's Active Support) and that Ractor's
+  cache keeps the markup, byte for byte the main Ractor's. The missing-icon
+  policy runs on the main Ractor too. Without ractor-dispatch the miss raises
+  `Glyphs::MainRactor::Unavailable` naming the icon, and `Glyphs.preload_svg`
+  still seeds a Ractor's cache. glyphs does not depend on ractor-dispatch: add
+  it outside Rails 8.2. Refs zoolutions/phlex-reactive#363
+
 ## [0.3.0] - 2026-10-15
 
 ### Changed

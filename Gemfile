@@ -11,6 +11,7 @@ group :development do
   gem "gem-release"
   gem "lint_roller"
   gem "rake"
+  gem "ractor-dispatch", require: false # Glyphs::MainRactor renders a non-main Ractor's cache misses on the main one
   gem "rspec"
   gem "rubocop"
   gem "rubocop-performance"
