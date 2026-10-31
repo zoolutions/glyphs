@@ -156,7 +156,7 @@ module Glyphs
     # name the AST can't read (`LucideIcon(tile[:icon])`) — across every scanned
     # Ruby file, then turns that evidence into IconReferences.
     #
-    # Two sources of candidate names, both harvested only from literals so we
+    # Three sources of candidate names, all harvested only from literals so we
     # never invent a reference:
     #
     #   1. file-scoped — a file that dynamically renders library L contributes
@@ -166,6 +166,10 @@ module Glyphs
     #      (a hash pair keyed `/icon/i`, or a constant named `/ICON/`) are
     #      candidates for EVERY dynamically-rendered library, since a bare
     #      `ICON = :bell` in one file is often rendered from another.
+    #   3. forwarded — a file passing a non-literal under a key like an icon
+    #      (`Badge(icon:)`, `Badge(icon: row.first)`) hands a name on to a wrapper
+    #      that renders it elsewhere, so ALL its literals are candidates for
+    #      every dynamically-rendered library, as declarations are.
     #
     # Names resolve at the library's default variant: a dynamic call names no
     # variant in practice, and the pruner keeps per (library, variant).
@@ -179,6 +183,7 @@ module Glyphs
       # Folds one file's visitor results into the running accumulator.
       def absorb(visitor)
         @declaration_literals.merge(visitor.declaration_literals)
+        @declaration_literals.merge(visitor.file_literals) if visitor.forwards_icon
         return if visitor.dynamic_libraries.empty?
 
         @dynamic_libraries.merge(visitor.dynamic_libraries)
@@ -205,18 +210,28 @@ module Glyphs
       # Excludes CSS classes (spaces/slashes), paths, and interpolated strings.
       ICON_NAME_LITERAL = /\A[a-z][a-z0-9_-]*\z/
 
+      # Values of an icon-keyed pair that forward nothing: a declaration harvest
+      # reads the names, and `icon: nil` or `icon_size: 16` names no icon at all.
+      LITERAL_VALUES = [
+        Prism::SymbolNode, Prism::StringNode, Prism::NilNode, Prism::TrueNode, Prism::FalseNode,
+        Prism::IntegerNode, Prism::FloatNode
+      ].freeze
+
       # Libraries this file renders with a dynamic (non-literal) first argument.
       attr_reader :dynamic_libraries
       # Icon-name-shaped literals anywhere in this file (file-scoped candidates).
       attr_reader :file_literals
       # Literals in icon-declaration positions (`icon:` pairs, `ICON` constants).
       attr_reader :declaration_literals
+      # Whether this file passes a non-literal under a key like an icon.
+      attr_reader :forwards_icon
 
       def initialize(references)
         @references = references
         @dynamic_libraries = Set.new
         @file_literals = Set.new
         @declaration_literals = Set.new
+        @forwards_icon = false
         super()
       end
 
@@ -247,16 +262,34 @@ module Glyphs
       end
 
       # `icon: :activity` / `menu_icon: "gear"` — a hash pair keyed like an icon
-      # declares an icon name, wherever it lives.
+      # declares an icon name, wherever it lives. A non-literal value there
+      # (`icon:`, `icon: row.first`) forwards a name instead.
       def visit_assoc_node(node)
         key = node.key
-        collect_declaration(node.value) if key.is_a?(Prism::SymbolNode) && key.unescaped.match?(/icon/i)
+        if key.is_a?(Prism::SymbolNode) && key.unescaped.match?(/icon/i)
+          collect_declaration(node.value)
+          @forwards_icon ||= forwarded_value?(node.value)
+        end
         super
       end
 
       private
 
       attr_reader :references
+
+      # A container forwards when anything inside it does: `icon: [:a, pick]`.
+      def forwarded_value?(value_node)
+        value_node = unwrap_declaration_wrappers(value_node)
+        case value_node
+        when Prism::ArrayNode then value_node.elements.any? { |element| forwarded_value?(element) }
+        when Prism::HashNode then value_node.elements.any? { |element| forwarded_pair?(element) }
+        else LITERAL_VALUES.none? { |literal| value_node.is_a?(literal) }
+        end
+      end
+
+      def forwarded_pair?(element)
+        !element.is_a?(Prism::AssocNode) || forwarded_value?(element.value)
+      end
 
       def record(node)
         method = node.name.to_s

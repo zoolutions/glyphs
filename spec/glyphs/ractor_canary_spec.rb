@@ -67,4 +67,35 @@ RSpec.describe "Glyphs.svg_for in a non-main Ractor" do
       it_behaves_like "runs inside a non-main Ractor", inputs: ["does-not-exist"]
     end
   end
+
+  # The guard runs where the render runs, on the main Ractor, so a Ractor's miss
+  # behaves as a main Ractor render does and its error crosses back.
+  context "with raise_on_prunable on" do
+    before do
+      allow(Dir).to receive(:pwd).and_return(File.expand_path("../fixtures/source", __dir__))
+      Glyphs.reset_configuration!
+      Glyphs.configure { |config| config.raise_on_prunable = true }
+      Glyphs.finalize!
+    end
+
+    context "with an icon the prune keeps" do
+      let(:subject_call) do
+        proc { |name| Glyphs.svg_for(name:, library: :lucide, variant: nil, attributes: {}) }
+      end
+
+      it_behaves_like "runs inside a non-main Ractor", inputs: ["house"]
+    end
+
+    context "with an icon the prune would delete" do
+      let(:subject_call) do
+        proc do |name|
+          Glyphs.svg_for(name:, library: :lucide, variant: nil, attributes: {})
+        rescue Glyphs::PrunableIconError => e
+          [e.class, e.message]
+        end
+      end
+
+      it_behaves_like "runs inside a non-main Ractor", inputs: ["anchor"]
+    end
+  end
 end

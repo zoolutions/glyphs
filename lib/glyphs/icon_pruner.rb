@@ -38,12 +38,21 @@ module Glyphs
           next
         end
 
-        keep = keep_names_for(library, variant)
-        stat = prune_group(library, variant, files, keep, deleted_names)
-        stats << stat
+        stats << prune_group(library, variant, files, unkept_files(library, variant, files), deleted_names)
       end
 
       PruneReport.new(stats:, deleted_names:, dry_run: @dry_run)
+    end
+
+    # The Set of IconReferences #call would delete: same files, same keep-sets.
+    # Deletes nothing and warns about nothing.
+    def prunable
+      groups = grouped_files.select { |(library, _), _| library_used?(library) }
+      groups.each_with_object(Set.new) do |((library, variant), files), references|
+        unkept_files(library, variant, files).each do |path|
+          references << IconReference.new(library:, variant:, name: File.basename(path, ".svg"))
+        end
+      end
     end
 
     private
@@ -69,25 +78,19 @@ module Glyphs
       end
     end
 
-    def prune_group(library, variant, files, keep, deleted_names)
-      kept = 0
-      deleted = 0
-      bytes_freed = 0
+    # The one decision of what goes, shared by #call and #prunable.
+    def unkept_files(library, variant, files)
+      keep = keep_names_for(library, variant)
+      files.reject { |path| keep_file?(File.basename(path, ".svg"), keep) }
+    end
 
-      files.each do |path|
-        name = File.basename(path, ".svg")
-        if keep_file?(name, keep)
-          kept += 1
-          next
-        end
+    def prune_group(library, variant, files, unkept, deleted_names)
+      bytes_freed = unkept.sum { |path| File.size(path) }
+      deleted_names.concat(unkept.map { |path| File.basename(path, ".svg") })
+      unkept.each { |path| File.delete(path) } unless @dry_run
 
-        deleted += 1
-        bytes_freed += File.size(path)
-        deleted_names << name
-        File.delete(path) unless @dry_run
-      end
-
-      PruneReport::LibraryStat.new(library:, variant:, kept:, deleted:, bytes_freed:)
+      PruneReport::LibraryStat.new(library:, variant:, kept: files.size - unkept.size, deleted: unkept.size,
+        bytes_freed:)
     end
 
     def keep_file?(name, keep)

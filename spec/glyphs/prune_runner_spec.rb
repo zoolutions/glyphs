@@ -116,6 +116,34 @@ RSpec.describe Glyphs::PruneRunner do
     expect(exists?("lucide/outline/triangle-alert.svg")).to be(false)
   end
 
+  # Issue #35, end to end: the name is a literal in a file that only forwards it,
+  # and the render is a dynamic call in another file.
+  it "keeps an icon forwarded through a wrapper's icon: keyword" do
+    write_source("app/components/badge.rb", "class Badge\n  def view_template = LucideIcon(@icon)\nend")
+    write_source("app/components/rows.rb", "ROWS = [:circle_check]\nROWS.each { |icon| Badge(icon:) }")
+
+    run
+
+    expect(exists?("lucide/outline/circle-check.svg")).to be(true)
+  end
+
+  describe "#prunable" do
+    it "merges dynamic keeps, keep_icons and fallbacks as a prune does, and deletes nothing" do
+      write_source("app/components/demo.rb", "LucideIcon(:house)\nname = :circle_check\nLucideIcon(name)")
+      names = described_class.new(root:, icons_root:).prunable.map(&:name)
+
+      expect(names).to include("anchor")
+      expect(names).not_to include("house", "circle-check", "triangle-alert", "circle-question-mark")
+      expect(exists?("lucide/outline/anchor.svg")).to be(true)
+    end
+
+    it "lists an icon nothing keeps" do
+      write_source("app/components/demo.rb", "LucideIcon(:house)")
+
+      expect(described_class.new(root:, icons_root:).prunable.map(&:name)).to include("circle-check")
+    end
+  end
+
   describe "#verify!" do
     it "raises when a kept icon is missing after pruning" do
       write_source("app/components/demo.rb", "LucideIcon(:house)")

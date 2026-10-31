@@ -8,6 +8,10 @@ RSpec.describe Glyphs::Configuration do
       expect(configuration.raise_on_missing).to be(true)
     end
 
+    it "does not guard renders against the prune by default" do
+      expect(configuration.raise_on_prunable).to be(false)
+    end
+
     it "has no missing icon hook by default" do
       expect(configuration.on_missing_icon).to be_nil
     end

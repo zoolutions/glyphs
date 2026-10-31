@@ -15,6 +15,23 @@
   `Glyphs::MainRactor::Unavailable` naming the icon, and `Glyphs.preload_svg`
   still seeds a Ractor's cache. glyphs does not depend on ractor-dispatch: add
   it outside Rails 8.2. Refs zoolutions/phlex-reactive#363
+- **`config.raise_on_prunable` fails a render the prune would delete.** Off by
+  default. With it on, typically in the test environment, rendering such an icon
+  raises `Glyphs::PrunableIconError`, naming the library, variant and name, so a
+  test fails instead of production. The guard asks the pruner, so under one
+  configuration the two agree. The first uncached render scans the source, once
+  per process; with the setting off nothing is scanned. Enabling it may fail specs, and each such
+  failure is an icon that would have gone missing in production. Refs #35
+
+### Fixed
+
+- **`glyphs:prune_icons` no longer deletes icons forwarded through a wrapper
+  component.** A file that passes a non-literal under a key like an icon
+  (`Badge(icon:)`, `Badge(icon: row.first)`) now keeps its icon-name-shaped
+  literals for every dynamically-rendered library. They were dropped when the
+  file itself had no dynamic icon call, so the icon raised
+  `Icons::IconNotFound` in production only. Pruning can only keep a little more
+  than before. Refs #35
 
 ## [0.3.0] - 2026-10-15
 

@@ -24,8 +24,11 @@ module Glyphs
     # prune_source_globs: extra locations the pruner's scanner text-scans IN
     #   ADDITION to the built-in Ruby/template defaults — e.g. a config file that
     #   names icons. Never replaces the defaults (nil = defaults only).
+    # raise_on_prunable: boolean; when true, rendering an icon glyphs:prune_icons
+    #   would delete raises Glyphs::PrunableIconError. For the test environment:
+    #   the first uncached render scans the source, once per process.
     attr_accessor :raise_on_missing, :on_missing_icon, :fallback_icons, :cache_svgs,
-      :keep_icons, :prune_source_globs
+      :keep_icons, :prune_source_globs, :raise_on_prunable
     attr_reader :svg_cache_size
 
     def initialize
@@ -36,6 +39,7 @@ module Glyphs
       @svg_cache_size = DEFAULT_SVG_CACHE_SIZE
       @keep_icons = []
       @prune_source_globs = nil
+      @raise_on_prunable = false
     end
 
     def svg_cache_size=(size)

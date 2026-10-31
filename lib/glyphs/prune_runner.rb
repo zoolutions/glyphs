@@ -28,6 +28,12 @@ module Glyphs
       report
     end
 
+    # The IconReferences a prune would delete, deleting nothing: the pruner's own
+    # answer over the same scan and keep-sets #call uses.
+    def prunable
+      pruner.prunable
+    end
+
     # Asserts every kept icon resolves to a file on disk. Raises
     # VerificationError listing the first few misses.
     def verify!

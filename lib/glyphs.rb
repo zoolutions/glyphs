@@ -38,6 +38,8 @@ module Glyphs
   # readers never take it, so svg_for runs in any Ractor once finalized.
   @lock = Monitor.new
   @configuration = Configuration.new
+  @prune_guard = nil
+  @prune_guard_lock = Mutex.new
 
   class << self
     # The current configuration: a plain read, shareable after finalize!.
@@ -49,6 +51,7 @@ module Glyphs
     end
 
     def reset_configuration!
+      @prune_guard_lock.synchronize { @prune_guard = nil }
       @lock.synchronize { @configuration = Configuration.new }
     end
 
@@ -128,10 +131,26 @@ module Glyphs
       resolve_svg(name:, library:, variant:, attributes:)
     end
 
+    # Only a miss gets here, and only on the main Ractor. A name with no file is
+    # never prunable, so it passes the guard and meets the missing-icon policy.
     def resolve_svg(name:, library:, variant:, attributes:)
+      prune_guard&.check!(name:, library:, variant:)
       build_svg(name:, library:, variant:, attributes:)
     rescue Icons::IconNotFound => e
       handle_missing_icon(e, name:, library:, variant:, attributes:)
+    end
+
+    # nil while raise_on_prunable is off, so that path reads nothing. A racing
+    # thread waits for the first scan rather than repeating it. Not @lock: this
+    # runs under the SvgCache mutex, and a configure block holding @lock may render.
+    def prune_guard
+      config = configuration
+      return unless config.raise_on_prunable
+
+      @prune_guard_lock.synchronize do
+        @prune_guard = PruneGuard.new(config:) unless @prune_guard&.current?(config)
+        @prune_guard
+      end
     end
 
     def build_svg(name:, library:, variant:, attributes:)

@@ -8,6 +8,10 @@ ractor:
 probes:
   gem_name: glyphs
 main_only:
+  - name: Glyphs.@prune_guard_lock
+    reason: >-
+      guards the raise_on_prunable guard, built in resolve_svg, which only the main Ractor runs: a
+      non-main Ractor's miss renders there through Glyphs::MainRactor
   - name: Glyphs.@lock
     reason: >-
       guards the boot-time writers (configure, register_library, finalize!, reset_configuration!), which only
