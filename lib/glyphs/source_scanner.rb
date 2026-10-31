@@ -211,10 +211,10 @@ module Glyphs
       ICON_NAME_LITERAL = /\A[a-z][a-z0-9_-]*\z/
 
       # Values of an icon-keyed pair that forward nothing: a declaration harvest
-      # reads the literals, and `icon: nil` or `icon: false` names no icon at all.
+      # reads the names, and `icon: nil` or `icon_size: 16` names no icon at all.
       LITERAL_VALUES = [
-        Prism::SymbolNode, Prism::StringNode, Prism::ArrayNode, Prism::HashNode,
-        Prism::NilNode, Prism::TrueNode, Prism::FalseNode
+        Prism::SymbolNode, Prism::StringNode, Prism::NilNode, Prism::TrueNode, Prism::FalseNode,
+        Prism::IntegerNode, Prism::FloatNode
       ].freeze
 
       # Libraries this file renders with a dynamic (non-literal) first argument.
@@ -277,9 +277,18 @@ module Glyphs
 
       attr_reader :references
 
+      # A container forwards when anything inside it does: `icon: [:a, pick]`.
       def forwarded_value?(value_node)
         value_node = unwrap_declaration_wrappers(value_node)
-        LITERAL_VALUES.none? { |literal| value_node.is_a?(literal) }
+        case value_node
+        when Prism::ArrayNode then value_node.elements.any? { |element| forwarded_value?(element) }
+        when Prism::HashNode then value_node.elements.any? { |element| forwarded_pair?(element) }
+        else LITERAL_VALUES.none? { |literal| value_node.is_a?(literal) }
+        end
+      end
+
+      def forwarded_pair?(element)
+        !element.is_a?(Prism::AssocNode) || forwarded_value?(element.value)
       end
 
       def record(node)

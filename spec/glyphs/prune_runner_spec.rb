@@ -132,6 +132,7 @@ RSpec.describe Glyphs::PruneRunner do
       write_source("app/components/demo.rb", "LucideIcon(:house)\nname = :circle_check\nLucideIcon(name)")
       names = described_class.new(root:, icons_root:).prunable.map(&:name)
 
+      expect(names).to include("anchor")
       expect(names).not_to include("house", "circle-check", "triangle-alert", "circle-question-mark")
       expect(exists?("lucide/outline/anchor.svg")).to be(true)
     end

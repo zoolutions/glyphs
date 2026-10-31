@@ -152,6 +152,28 @@ RSpec.describe Glyphs::SourceScanner do
         expect(keeps_for("ROWS = [:star]\nBadge(icon: { a: :bell }.freeze)")).to include("bell").and exclude("star")
       end
 
+      it "treats a dynamic element of an array as a forward" do
+        expect(keeps_for("ROWS = [:bell]\nBadge(icon: [:star, ROWS.first])")).to include("bell", "star")
+      end
+
+      it "treats a dynamic value of a hash as a forward" do
+        expect(keeps_for("ROWS = [:bell]\nBadge(icon: { open: :star, closed: ROWS.first })")).to include("bell")
+      end
+
+      it "treats a splat inside a container as a forward" do
+        expect(keeps_for("ROWS = [:bell]\nBadge(icons: [*ROWS])")).to include("bell")
+        expect(keeps_for("ROWS = [:bell]\nBadge(icon: { **rows })")).to include("bell")
+      end
+
+      it "reads a container of nothing but literals as a declaration" do
+        expect(keeps_for("ROWS = [:star]\nBadge(icon: [[:bell, 1], { a: :gear, b: nil }])"))
+          .to include("bell", "gear").and exclude("star")
+      end
+
+      it "does not read a number as a forward" do
+        expect(keeps_for("ROWS = [:star]\nBadge(icon_size: 16)\nBadge(icon_stroke: 1.5)")).to exclude("star")
+      end
+
       it "does not read an explicit nil or false as a forward" do
         expect(keeps_for("ROWS = [:star]\nBadge(icon: nil)\nBadge(icon: false)\nBadge(icon: true)")).to exclude("star")
       end
