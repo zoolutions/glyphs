@@ -1,0 +1,13 @@
+spec/glyphs/prune_runner_spec.rb
+  ai_agent 135
+spec/glyphs/source_scanner_spec.rb
+  ai_agent 155-176
+lib/glyphs/source_scanner.rb
+  ai_agent 214,216-217,280,283-291
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "a8a5f059a1f6f6bdd6223f2547c6a3d2f8ce53a0",
+  "prompts": {}
+}
