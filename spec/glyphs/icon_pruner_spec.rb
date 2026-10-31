@@ -23,6 +23,36 @@ RSpec.describe Glyphs::IconPruner do
     File.exist?(File.join(icons_root, relative))
   end
 
+  describe "#prunable" do
+    subject(:pruner) do
+      described_class.new(icons_root:, references: Set[ref(:lucide, "outline", "house")],
+        keep_icons: %w[triangle-*], fallback_icons: { lucide: "circle-question-mark" })
+    end
+
+    it "lists what #call would delete, as references" do
+      expect(pruner.prunable).to contain_exactly(
+        ref(:lucide, "outline", "anchor"), ref(:lucide, "outline", "circle-check")
+      )
+    end
+
+    it "deletes nothing" do
+      pruner.prunable
+
+      expect(exists?("lucide/outline/circle-check.svg")).to be(true)
+    end
+
+    it "leaves out libraries #call refuses to prune, without its warning" do
+      expect { pruner.prunable }.not_to output.to_stderr
+      expect(pruner.prunable.map(&:library).uniq).to contain_exactly(:lucide)
+    end
+
+    it "matches the report of a real prune" do
+      names = pruner.prunable.map(&:name)
+
+      expect(names).to match_array(pruner.call.deleted_names)
+    end
+  end
+
   def prune(references:, keep_icons: [], fallback_icons: {}, dry_run: false)
     described_class.new(
       icons_root:, references: Set.new(references),
@@ -151,7 +181,7 @@ RSpec.describe Glyphs::IconPruner do
 
       lucide = report.stats.find { |stat| stat.library == :lucide }
       expect(lucide.kept).to eq(2)            # house + circle-question-mark
-      expect(lucide.deleted).to eq(2)         # circle-check + triangle-alert
+      expect(lucide.deleted).to eq(3)         # anchor + circle-check + triangle-alert
       expect(lucide.bytes_freed).to be > 0
     end
   end

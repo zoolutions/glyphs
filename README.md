@@ -180,10 +180,47 @@ The scanner resolves them from source, so you rarely need `keep_icons` at all:
   constant named like one (`ICON = :bell`, `STATUS_ICONS = { .. => :warning }`,
   including trailing `.freeze`) — are kept for every dynamically-rendered
   library, so a name declared in one file and rendered from another survives.
+- **Forwarded** — a file that passes a non-literal under a key like an icon
+  (`Badge(icon:)`, `Badge(icon: row.first)`) hands a name on to a wrapper
+  component, so every icon-name-shaped literal in that file is kept for every
+  dynamically-rendered library. `ROWS = [[:bell, 1]]` survives when the row
+  reaches `Badge(icon:)`, and `Badge`'s `LucideIcon(@icon)` lives in another file.
 
 Only literals are harvested, so the scanner never invents a reference; the
 worst case is keeping a coincidentally icon-named string, which the post-prune
 verification tolerates.
+
+A static scan can't follow every value. A literal passed positionally to a
+wrapper (`m.row("Alerts", :anchor)`) is still pruned, and so is a forwarded
+keyword in a template, which is text-scanned. Nothing fails until production:
+development and test keep every SVG, and the post-prune verification doesn't
+assert harvested names. `raise_on_prunable` closes that gap.
+
+### `raise_on_prunable` — fail the test that renders a prunable icon
+
+```ruby
+# config/environments/test.rb, or an initializer guarded by Rails.env.test?
+Glyphs.configure do |config|
+  config.raise_on_prunable = true
+end
+```
+
+With it on, rendering an icon the prune would delete raises
+`Glyphs::PrunableIconError`, naming the library, variant and name. Every page a
+test renders becomes a check, and each failure is a production bug: name the icon
+in an icon position (`icon: :anchor`, an `ICON` constant) or list it in
+`keep_icons`.
+
+The guard asks the pruner itself, so the two agree, including on `keep_icons`
+globs and on the libraries a prune leaves alone. That holds for the configuration
+the test runs with: a `keep_icons`, `fallback_icons` or `prune_source_globs` that
+differs by `Rails.env` makes the guard answer for a different keep-set than your
+image build prunes with. The first uncached render scans
+your source, once per process (a parallel test worker scans for itself), and
+cache hits never reach the check. A name that doesn't exist at all still meets
+the missing-icon policy. The default is `false`, which scans nothing, and
+source changed after the scan isn't seen until the process restarts, so keep this
+in the test environment.
 
 ### `keep_icons` — the last-resort escape hatch
 

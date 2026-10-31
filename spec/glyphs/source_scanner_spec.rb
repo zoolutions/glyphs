@@ -3,6 +3,8 @@
 require "tmpdir"
 require "fileutils"
 
+RSpec::Matchers.define_negated_matcher :exclude, :include
+
 RSpec.describe Glyphs::SourceScanner do
   let(:root) { File.expand_path("../fixtures/source", __dir__) }
 
@@ -105,6 +107,73 @@ RSpec.describe Glyphs::SourceScanner do
       # dynamic icon call, not in a declaration position, is not harvested.
       it "does not harvest unrelated literals from files without dynamic calls" do
         expect(keeps.values.flat_map(&:to_a)).not_to include("definitely-not-an-icon")
+      end
+    end
+
+    # Issue #35. The name lives in one file and reaches a wrapper's dynamic render
+    # through a keyword only that file's own literals can resolve.
+    context "with an icon name forwarded to a wrapper component" do
+      subject(:keeps) { described_class.new(root:).dynamic_keeps }
+
+      def keeps_for(source)
+        Dir.mktmpdir do |dir|
+          FileUtils.mkdir_p(File.join(dir, "app"))
+          File.write(File.join(dir, "app/badge.rb"), "LucideIcon(@icon)")
+          File.write(File.join(dir, "app/caller.rb"), source)
+          described_class.new(root: dir).dynamic_keeps[:lucide]
+        end
+      end
+
+      it "keeps a file's literals when it forwards with the icon: shorthand" do
+        expect(keeps[:lucide]).to include("bell", "star")
+      end
+
+      it "keeps them for every dynamically-rendered library" do
+        expect(keeps[:phosphor]).to include("bell", "star")
+      end
+
+      it "treats a computed value as a forward" do
+        expect(keeps_for("ROWS = [[:bell]]\nBadge(icon: ROWS.first.first)")).to include("bell")
+      end
+
+      it "treats a ternary between literals as a forward, keeping both" do
+        expect(keeps_for("Badge(icon: open ? :caret_up : :caret_down)")).to include("caret-up", "caret-down")
+      end
+
+      it "matches any key shaped like an icon" do
+        expect(keeps_for("ROWS = [:bell]\nBadge(menu_icon: ROWS.first)")).to include("bell")
+      end
+
+      it "keeps only the declared name for a literal icon: value" do
+        expect(keeps_for("ROWS = [:star]\nBadge(icon: :bell)")).to include("bell").and exclude("star")
+      end
+
+      it "reads a frozen literal as a literal, not a forward" do
+        expect(keeps_for("ROWS = [:star]\nBadge(icon: { a: :bell }.freeze)")).to include("bell").and exclude("star")
+      end
+
+      it "does not read an explicit nil or false as a forward" do
+        expect(keeps_for("ROWS = [:star]\nBadge(icon: nil)\nBadge(icon: false)\nBadge(icon: true)")).to exclude("star")
+      end
+
+      it "does not read a keyword named otherwise as a forward" do
+        expect(keeps_for("ROWS = [:star]\nBadge(label: ROWS.first)")).to exclude("star")
+      end
+
+      # Shape 2 of the issue: a positional literal, with neither a forwarded
+      # keyword nor a dynamic call in its file. Its literals stay prunable, and
+      # raise_on_prunable is what catches this shape.
+      it "harvests nothing from a file with neither a forward nor a dynamic call" do
+        expect(keeps.values.flat_map(&:to_a)).not_to include("anchor")
+      end
+
+      it "keeps nothing when no library renders dynamically" do
+        Dir.mktmpdir do |dir|
+          FileUtils.mkdir_p(File.join(dir, "app"))
+          File.write(File.join(dir, "app/caller.rb"), "Badge(icon: pick)\nLucideIcon(:house)")
+
+          expect(described_class.new(root: dir).dynamic_keeps).to be_empty
+        end
       end
     end
 
