@@ -6,7 +6,7 @@ gemspec
 group :development do
   gem "async", require: false # runs conformance-kit's "fiber-safe under an Async reactor" example
   gem "benchmark-ips", require: false # bench/svg_for.rb
-  gem "conformance-kit", "~> 0.4", require: false # concurrency conformance gates (zoolutions/phlex-reactive#363)
+  gem "conformance-kit", "~> 0.5", require: false # concurrency conformance gates (zoolutions/phlex-reactive#363)
   gem "debug"
   gem "gem-release"
   gem "lint_roller"
