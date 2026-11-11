@@ -1,0 +1,21 @@
+spec/glyphs/ractor_canary_spec.rb
+  s_4eea392e39db9a::t_e4ee755aede7d1 71-105
+spec/glyphs/default_data_spec.rb
+  s_4eea392e39db9a::t_37d8a04c01072d 132-133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "4a025d8610cc40e4fdd91863863d178b5d79ce89",
+  "prompts": {},
+  "sessions": {
+    "s_4eea392e39db9a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "03126578-e64d-4c81-a5f0-6fe13fc9e872",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
