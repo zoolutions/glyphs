@@ -164,9 +164,31 @@ RSpec.describe Glyphs::DefaultData do
 
     it "renders a non-hash data value as the icons gem does, cached and uncached alike" do
       attributes = { data: "raw" }
+      expected = icons_gem(**attributes)
+      allow(File).to receive(:read).and_call_original
+      svgs = [svg_for(**attributes), svg_for(**attributes)]
 
-      expect([svg_for(**attributes), svg_for(**attributes)]).to all(eq(icons_gem(**attributes)))
-      expect(uncached(**attributes)).to eq(icons_gem(**attributes))
+      expect(svgs).to all(eq(expected))
+      expect(File).to have_received(:read).twice
+      expect(uncached(**attributes)).to eq(expected)
+    end
+
+    it "renders as the icons gem replaces when the defaults name the cache's slot marker" do
+      with_default_data({ glyphs_data_slot: "kept", icon: true }) do
+        cached = from_cache(data: { x: 1 })
+
+        expect(cached).to eq(uncached(data: { x: 1 })).and eq(icons_gem(data: { x: 1 }))
+      end
+    end
+
+    # The icons gem drops "." from the file path, but looks its defaults up
+    # under libraries[library][:"."], so the merge must too.
+    it "resolves the defaults of variant \".\" as the icons gem does" do
+      gem_defaults = Icons::Icon.new(name: "house", library: :lucide, variant: ".", arguments: {}).send(:default, :data)
+      attributes = { data: { x: 1 } }
+
+      expect(gem_defaults).to be_nil
+      expect(described_class.merge(attributes, library: :lucide, variant: ".")).to be(attributes)
     end
 
     it "keeps the defaults for data: nil, as for no data:, cached and uncached alike" do

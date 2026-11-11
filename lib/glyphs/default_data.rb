@@ -6,8 +6,11 @@ module Glyphs
   # Reads the icons gem's configuration, so it runs on the main Ractor only
   # (Glyphs.build_svg, which a non-main Ractor reaches through MainRactor).
   # A default data key named like SvgTemplate's slot marker (glyphs-data-slot)
-  # is reserved: the cached data: template would drop it.
+  # would be dropped by the cached data: template, so such defaults are not
+  # merged: both paths render as the icons gem does.
   module DefaultData
+    SLOT_NAME = SvgTemplate::SLOT_ATTRIBUTE.delete_prefix("data-").freeze
+
     class << self
       # The attributes with the default data merged under a data: hash, or
       # without a data: nil (the defaults alone, as with no data:), when the
@@ -20,12 +23,16 @@ module Glyphs
         return attributes unless data.nil? || data.is_a?(Hash)
 
         defaults = lookup(library:, variant:)
-        return attributes unless defaults.is_a?(Hash) && !defaults.empty?
+        return attributes unless mergeable?(defaults)
 
         data.nil? ? attributes.except(:data) : attributes.merge(data: by_name(defaults, data))
       end
 
       private
+
+      def mergeable?(defaults)
+        defaults.is_a?(Hash) && !defaults.empty? && defaults.each_key.none? { |key| key.to_s.tr("_", "-") == SLOT_NAME }
+      end
 
       # One entry per attribute name, however its key is spelled (:toggle_target,
       # "toggle-target"): at the position its name first appears, with the value
