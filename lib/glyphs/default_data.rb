@@ -9,16 +9,20 @@ module Glyphs
   # is reserved: the cached data: template would drop it.
   module DefaultData
     class << self
-      # The attributes with the default data merged under a data: hash (a new
-      # Hash; the caller's is never mutated), or the attributes as given.
+      # The attributes with the default data merged under a data: hash, or
+      # without a data: nil (the defaults alone, as with no data:), when the
+      # library has default data; else the attributes as given. A new Hash: the
+      # caller's is never mutated.
       def merge(attributes, library:, variant:)
+        return attributes unless attributes.key?(:data)
+
         data = attributes[:data]
-        return attributes unless data.is_a?(Hash)
+        return attributes unless data.nil? || data.is_a?(Hash)
 
         defaults = lookup(library:, variant:)
         return attributes unless defaults.is_a?(Hash) && !defaults.empty?
 
-        attributes.merge(data: by_name(defaults, data))
+        data.nil? ? attributes.except(:data) : attributes.merge(data: by_name(defaults, data))
       end
 
       private

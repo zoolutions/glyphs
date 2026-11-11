@@ -169,11 +169,11 @@ RSpec.describe Glyphs::DefaultData do
       expect(uncached(**attributes)).to eq(icons_gem(**attributes))
     end
 
-    it "treats data: nil as no data, keeping the defaults and the cache" do
-      cached = from_cache(class: "a", data: nil)
+    it "keeps the defaults for data: nil, as for no data:, cached and uncached alike" do
+      svgs = [svg_for(class: "a", data: nil), svg_for(class: "a", data: nil), uncached(class: "a", data: nil)]
 
-      expect(cached).to include('data-icon="true"').and not_include('data=""')
-      expect(cached).to eq(uncached(class: "a", data: nil)).and eq(icons_gem(class: "a"))
+      expect(svgs.first).to include('data-icon="true"').and not_include('data=""')
+      expect(svgs).to all(eq(icons_gem(class: "a")))
     end
 
     {
@@ -206,13 +206,16 @@ RSpec.describe Glyphs::DefaultData do
       expect(html).to include('data-icon="true"').and include('data-toggle-target="show"')
     end
 
-    it "renders a library with no default data as it does with the setting off" do
-      with_default_data({}) do
-        on = [from_cache(data: { x: 1 }), uncached(data: { x: 1 })]
-        Glyphs.configuration.merge_default_data = false
-        Glyphs.reset_cache!
+    calls = [{ data: { x: 1 } }, { data: nil }, { data: "raw" }, { data: {} }, { class: "a" }]
+    [{}, nil].product(calls).each do |defaults, attributes|
+      it "renders #{attributes} with default data #{defaults.inspect} as it does with the setting off" do
+        with_default_data(defaults) do
+          on = [svg_for(**attributes), svg_for(**attributes), uncached(**attributes)]
+          Glyphs.configuration.merge_default_data = false
+          Glyphs.reset_cache!
 
-        expect(on).to all(eq(from_cache(data: { x: 1 })))
+          expect(on).to all(eq(svg_for(**attributes)))
+        end
       end
     end
   end
