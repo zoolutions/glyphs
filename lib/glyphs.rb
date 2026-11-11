@@ -92,8 +92,15 @@ module Glyphs
     # policy (raise / instrument / fallback) and the per-Ractor cache: one
     # entry per [library, variant, name], the caller's attributes applied to
     # the cached markup on every call.
+    #
+    # With merge_default_data on, the library's default data is merged under a
+    # caller's data: hash when the icons gem renders (build_svg, main Ractor
+    # only, where its configuration is readable). The data: template is then
+    # rendered with the defaults beside the slot marker, so a cache hit splices
+    # the caller's keys over them exactly as the merged hash would render. A
+    # non-hash data: cannot be merged and renders uncached.
     def svg_for(name:, library:, variant:, attributes:)
-      return render_svg(name:, library:, variant:, attributes:) unless configuration.cache_svgs
+      return render_svg(name:, library:, variant:, attributes:) if uncached?(attributes)
 
       data = attributes.key?(:data)
       template = svg_cache.compute_if_absent([library, variant, name, data], configuration.svg_cache_size) do
@@ -122,6 +129,13 @@ module Glyphs
     end
 
     private
+
+    def uncached?(attributes)
+      config = configuration
+      return true unless config.cache_svgs
+
+      config.merge_default_data && attributes.key?(:data) && !attributes[:data].is_a?(Hash)
+    end
 
     # A non-main Ractor cannot run the icons gem, so it renders on the main
     # Ractor (see MainRactor); the missing-icon policy runs there too.
@@ -154,6 +168,7 @@ module Glyphs
     end
 
     def build_svg(name:, library:, variant:, attributes:)
+      attributes = DefaultData.merge(attributes, library:, variant:) if configuration.merge_default_data
       Icons::Icon.new(name:, library:, variant:, arguments: attributes).svg
     end
 

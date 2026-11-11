@@ -18,6 +18,9 @@ module Glyphs
   # A caller's data: replaces the library's default data (the icons gem merges
   # them that way) and lands where the defaults would have, so data: calls use
   # a template rendered with DATA_SLOT, whose marker attribute holds that place.
+  # With merge_default_data on, that template is rendered with the default data
+  # before the marker (Glyphs::DefaultData), and a caller's key that names a
+  # default replaces it in place, as rendering the merged hash would.
   class SvgTemplate
     DATA_SLOT = { data: { "glyphs-data-slot" => "" }.freeze }.freeze
     SLOT_ATTRIBUTE = "data-glyphs-data-slot"
