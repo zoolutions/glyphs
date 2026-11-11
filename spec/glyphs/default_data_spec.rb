@@ -134,14 +134,25 @@ RSpec.describe Glyphs::DefaultData do
       end
     end
 
-    it "does not mutate the caller's hash" do
-      data = { x: 1 }.freeze
-      attributes = { data: }.freeze
+    it "does not mutate the caller's hash, cached or uncached" do
+      attributes = { data: { x: 1 }.freeze }.freeze
 
       svg_for(**attributes)
       Glyphs.svg_for(name: "house", library: :lucide, variant: nil, attributes:)
+      Glyphs.configuration.cache_svgs = false
+      Glyphs.svg_for(name: "house", library: :lucide, variant: nil, attributes:)
 
       expect(attributes).to eq(data: { x: 1 })
+    end
+
+    it "returns new hashes from .merge, leaving the caller's as given" do
+      data = { x: 1 }.freeze
+      attributes = { data:, class: "a" }.freeze
+
+      merged = described_class.merge(attributes, library: :lucide, variant: nil)
+
+      expect(merged).to eq(data: { "icon" => true, "x" => 1 }, class: "a")
+      expect(attributes).to eq(data: { x: 1 }, class: "a")
     end
 
     it "renders a merged attribute the cache cannot apply through the icons gem with the defaults" do
@@ -151,13 +162,37 @@ RSpec.describe Glyphs::DefaultData do
         .and eq(icons_gem(href: "#home", data: { icon: true, x: 1 }))
     end
 
+    it "renders a non-hash data value as the icons gem does, cached and uncached alike" do
+      attributes = { data: "raw" }
+
+      expect([svg_for(**attributes), svg_for(**attributes)]).to all(eq(icons_gem(**attributes)))
+      expect(uncached(**attributes)).to eq(icons_gem(**attributes))
+    end
+
+    it "treats data: nil as no data, keeping the defaults and the cache" do
+      cached = from_cache(class: "a", data: nil)
+
+      expect(cached).to include('data-icon="true"').and not_include('data=""')
+      expect(cached).to eq(uncached(class: "a", data: nil)).and eq(icons_gem(class: "a"))
+    end
+
     {
-      "a non-hash data value" => { data: "raw" },
-      "a nil data value" => { data: nil }
-    }.each do |label, attributes|
-      it "renders #{label} as the icons gem does, cached and uncached alike" do
-        expect([svg_for(**attributes), svg_for(**attributes)]).to all(eq(icons_gem(**attributes)))
-        expect(uncached(**attributes)).to eq(icons_gem(**attributes))
+      "the caller spells a key two ways" => [{ "icon" => true }, { icon: "s", "icon" => "t" }],
+      "the defaults spell a key two ways" => [{ toggle_target: "a", "toggle-target" => "z" }, { toggle_target: "b" }],
+      "both spell a key differently" => [{ toggle_target: "a", tone: "m" }, { "toggle-target" => "b", x: "1" }]
+    }.each do |label, (defaults, data)|
+      it "renders the same cached and uncached when #{label}" do
+        with_default_data(defaults) do
+          cached = from_cache(data:)
+
+          expect(cached).to eq(uncached(data:))
+        end
+      end
+    end
+
+    it "lets the caller win when the defaults spell its key two ways" do
+      with_default_data({ toggle_target: "a", "toggle-target" => "z" }) do
+        expect(uncached(data: { toggle_target: "b" })).to include('data-toggle-target="b"')
       end
     end
 

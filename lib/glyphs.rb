@@ -98,8 +98,9 @@ module Glyphs
     # only, where its configuration is readable). The data: template is then
     # rendered with the defaults beside the slot marker, so a cache hit splices
     # the caller's keys over them exactly as the merged hash would render. A
-    # non-hash data: cannot be merged and renders uncached.
+    # non-hash data: cannot be merged and renders uncached; data: nil is no data.
     def svg_for(name:, library:, variant:, attributes:)
+      attributes = attributes.except(:data) if nil_data_merged?(attributes)
       return render_svg(name:, library:, variant:, attributes:) if uncached?(attributes)
 
       data = attributes.key?(:data)
@@ -129,6 +130,11 @@ module Glyphs
     end
 
     private
+
+    # With merge_default_data on, data: nil keeps the defaults, as no data: does.
+    def nil_data_merged?(attributes)
+      attributes.key?(:data) && attributes[:data].nil? && configuration.merge_default_data
+    end
 
     def uncached?(attributes)
       config = configuration

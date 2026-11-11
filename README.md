@@ -108,8 +108,9 @@ Glyphs.configure do |config|
   # Merge a call's data: hash over the library's configured default data
   # (`default.data` in the icons configuration) instead of replacing it, as the
   # icons gem does. The call's keys win on a conflict; its hash is not mutated.
-  # A non-hash data: renders as the icons gem renders it. Cached and uncached
-  # renders are identical either way. Default: false (the icons gem's behavior).
+  # data: nil keeps the defaults, as no data: does; any other non-hash data:
+  # renders as the icons gem renders it. Cached and uncached renders are
+  # identical either way. Default: false (the icons gem's behavior).
   # The cache holds the merged markup: call Glyphs.reset_cache! after changing
   # this or the icons gem's default data at runtime (tests).
   config.merge_default_data = false
@@ -147,7 +148,7 @@ the calling Ractor's cache keeps it, so each icon crosses once per cache entry; 
 Ractor. The missing-icon policy runs on the main Ractor too, `on_missing_icon` included. A call with an
 attribute that renders uncached, or any call with `cache_svgs = false`, goes to the main Ractor every time.
 `merge_default_data` reads the default data where the icons gem renders, on the main Ractor, so it adds no
-crossing: a hit merges the call's `data:` in the calling Ractor. With it on, a non-hash `data:` renders uncached.
+crossing: a hit merges the call's `data:` in the calling Ractor. With it on, a non-hash `data:` other than `nil` renders uncached.
 
 Without ractor-dispatch, a miss in a non-main Ractor raises `Glyphs::MainRactor::Unavailable`, naming the
 icon. You can still render on the main Ractor and hand the markup over with `Glyphs.preload_svg`; cache hits

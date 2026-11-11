@@ -5,6 +5,8 @@ module Glyphs
   # a caller's data: hash, which the icons gem would otherwise replace it with.
   # Reads the icons gem's configuration, so it runs on the main Ractor only
   # (Glyphs.build_svg, which a non-main Ractor reaches through MainRactor).
+  # A default data key named like SvgTemplate's slot marker (glyphs-data-slot)
+  # is reserved: the cached data: template would drop it.
   module DefaultData
     class << self
       # The attributes with the default data merged under a data: hash (a new
@@ -16,10 +18,21 @@ module Glyphs
         defaults = lookup(library:, variant:)
         return attributes unless defaults.is_a?(Hash) && !defaults.empty?
 
-        attributes.merge(data: defaults.merge(data))
+        attributes.merge(data: by_name(defaults, data))
       end
 
       private
+
+      # One entry per attribute name, however its key is spelled (:toggle_target,
+      # "toggle-target"): at the position its name first appears, with the value
+      # it was given last, the caller's after the defaults. That is how a cache
+      # hit splices the caller's data over the template's defaults.
+      def by_name(defaults, data)
+        merged = {}
+        defaults.each { |key, value| merged[key.to_s.tr("_", "-")] = value }
+        data.each { |key, value| merged[key.to_s.tr("_", "-")] = value }
+        merged
+      end
 
       # The icons gem's own lookup (Icons::Icon::Configurable): the variant, else
       # the library's default_variant, else the global default_variant.
