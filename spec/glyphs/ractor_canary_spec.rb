@@ -68,6 +68,41 @@ RSpec.describe "Glyphs.svg_for in a non-main Ractor" do
     end
   end
 
+  # The default data is read where the icons gem renders, on the main Ractor, so
+  # a Ractor's miss crosses once and its hits splice the caller's data locally.
+  context "with merge_default_data on and a library default data" do
+    around do |example|
+      defaults = Icons.config.libraries.dig(:lucide, :outline, :default)
+      original = defaults.data
+      defaults.data = { icon: true }
+      example.run
+    ensure
+      defaults.data = original
+    end
+
+    before do
+      Glyphs.reset_configuration!
+      Glyphs.configure { |config| config.merge_default_data = true }
+      Glyphs.finalize!
+    end
+
+    let(:subject_call) do
+      proc do |attributes|
+        miss = Glyphs.svg_for(name: "house", library: :lucide, variant: nil, attributes:)
+        hit = Glyphs.svg_for(name: "house", library: :lucide, variant: nil, attributes:)
+        [miss, hit, Glyphs.svg_cache.size]
+      end
+    end
+
+    it "merges the default data under the caller's on the main Ractor" do
+      svg = Glyphs.svg_for(name: "house", library: :lucide, variant: nil, attributes: { data: { x: 1 } })
+
+      expect(svg).to include('data-icon="true"').and include('data-x="1"')
+    end
+
+    it_behaves_like "runs inside a non-main Ractor", inputs: [{ data: { x: 1 } }.freeze]
+  end
+
   # The guard runs where the render runs, on the main Ractor, so a Ractor's miss
   # behaves as a main Ractor render does and its error crosses back.
   context "with raise_on_prunable on" do

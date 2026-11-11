@@ -65,7 +65,8 @@ Changelog entries go under `## [Unreleased]` in `CHANGELOG.md`, grouped by `### 
   `IconPruner` skips any library with no reference, fallback or per-library `keep_icons` entry. `PruneRunner#verify!` runs after the prune and fails the build if a scanned reference or configured fallback is missing.
 - **The SVG cache** (`SvgCache`, per-Ractor LRU) keys on everything that changes the cached bytes
   (`[library, variant, name, data:-given?]`) and never on per-call attributes, which are merged on
-  every call. It stays mutex-guarded and `reset_cache!`-clearable; `cache_svgs = false` bypasses it.
+  every call. Configuration (the icons gem's defaults, `merge_default_data`) is assumed fixed after
+  boot and is baked into the cached bytes, not the key; specs that change it `reset_cache!`. It stays mutex-guarded and `reset_cache!`-clearable; `cache_svgs = false` bypasses it.
 - **Specs** point `Icons.config.base_path` at `spec/fixtures`; no Rails app boots. Cop specs assert
   `expect_offense` and `expect_correction`. Scanner specs cover static AST calls and dynamic/text
   harvesting; pruner specs prove a referenced SVG and a `keep_icons` entry survive. 100% coverage on

@@ -28,6 +28,10 @@ RSpec.describe Glyphs::Configuration do
       expect(configuration.cache_svgs).to be(true)
     end
 
+    it "replaces, not merges, the library's default data by default" do
+      expect(configuration.merge_default_data).to be(false)
+    end
+
     it "keeps no extra icons by default" do
       expect(configuration.keep_icons).to eq([])
     end

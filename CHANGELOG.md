@@ -4,6 +4,15 @@
 
 ### Added
 
+- **`config.merge_default_data` keeps a library's default data next to a
+  call's own.** Off by default. The icons gem replaces a library's configured
+  `default.data` with a call's `data:` hash, so a default marker such as
+  `data-icon` disappears from exactly the icons that carry data of their own.
+  With the setting on, the call's `data:` hash is merged over the defaults (the
+  call's keys win, its hash is not mutated; `data: nil` keeps the defaults, uncached).
+  Cached and uncached renders are byte-identical, the cache key is unchanged,
+  and a library with no default data renders as before. With it off, output is
+  unchanged. Refs #40
 - **A non-main Ractor renders icons it has not cached.** A miss there used to
   raise `Ractor::IsolationError` (`@configuration from Icons`), because the
   icons gem reads an unshareable module ivar and parses with Nokogiri, which

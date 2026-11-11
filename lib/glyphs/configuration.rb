@@ -18,6 +18,9 @@ module Glyphs
     # cache_svgs: memoize rendered SVGs per [library, variant, name]; the
     #   caller's attributes are applied to the cached markup on every call.
     # svg_cache_size: how many icons each Ractor's LRU cache holds (1024).
+    # merge_default_data: boolean; when true, a caller's data: hash is merged
+    #   over the library/variant's configured default data (the caller's keys
+    #   win) instead of replacing it, as the icons gem does. Default: false.
     # keep_icons: icons the pruner must keep despite no static reference
     #   (dynamic / data-driven names). A flat list of names/globs, or a
     #   { library => [names/globs] } hash. fallback_icons are always kept.
@@ -28,7 +31,7 @@ module Glyphs
     #   would delete raises Glyphs::PrunableIconError. For the test environment:
     #   the first uncached render scans the source, once per process.
     attr_accessor :raise_on_missing, :on_missing_icon, :fallback_icons, :cache_svgs,
-      :keep_icons, :prune_source_globs, :raise_on_prunable
+      :keep_icons, :prune_source_globs, :raise_on_prunable, :merge_default_data
     attr_reader :svg_cache_size
 
     def initialize
@@ -40,6 +43,7 @@ module Glyphs
       @keep_icons = []
       @prune_source_globs = nil
       @raise_on_prunable = false
+      @merge_default_data = false
     end
 
     def svg_cache_size=(size)
